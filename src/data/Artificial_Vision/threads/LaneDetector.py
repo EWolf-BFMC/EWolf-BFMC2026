@@ -3,17 +3,17 @@ from src.utils.messages.allMessages import mainCamera, HighwayZone
 import cv2
 import numpy as np
 
-class threadArtificial_Vision(ThreadWithStop):
+class LaneDetector(ThreadWithStop):
     def __init__(self, queueList, logging, debugging=False):
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
         self.subscribe()
-        super(threadArtificial_Vision, self).__init__()
+        super(LaneDetector, self).__init__()
 
     def subscribe(self):
-        """Tells the car to start 'watching' the camera"""
-        self.messageHandlerSubscriber.subscribe_to_message(mainCamera)
+        """Tells the car to start 'watching' the camera, only the last picture"""
+        self.messageHandlerSubscriber.subscribe_to_message(mainCamera, lastOnly=True)
 
     def thread_work(self):
         """Main loop: Get photo -> Process -> Calculate"""
