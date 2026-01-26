@@ -106,8 +106,8 @@ if __name__ == '__main__':
    # --- STARTING THE DASHBOARD SAFELY ---
     dashboard_ready = Event()
     
-    # En lugar de crear el objeto aquí, pasamos la CLASE y los ARGUMENTOS
-    # Esto evita que Windows intente "picklear" el objeto Flask
+    # We pass the class and the arguments
+    # This avoid Windows to try to "picklear" thr Flask object
     pDashboard = processDashboard(
         queueList, 
         logging, 
@@ -127,6 +127,11 @@ if __name__ == '__main__':
     )
     pVision.daemon = True
     pVision.start()
+    # --- STARTING SERIAL HANDLER ---
+    pSerial = processSerialHandler(queueList, logging, debugging=False)
+    pSerial.daemon = True
+    pSerial.start()
+
     # --- STAYING ALIVE ---
     blocker = Event()
     try:
@@ -149,4 +154,5 @@ if __name__ == '__main__':
         print("\nShutting down system safely...\n")
         pVision.stop()
         pDashboard.stop()
+        pSerial.stop()
         pGateway.stop()

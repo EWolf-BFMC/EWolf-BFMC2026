@@ -301,4 +301,12 @@ class StateChange(Enum):
     msgID = 1
     msgType = "str"
 
+#For the Highway
+class HighwayZone(Enum):
+    Queue = "General"
+    Owner = "stateMachine"
+    msgID = 2
+    msgType = "bool"
+
 ### It will have this format: {"WarningName":"name1", "WarningID": 1}
+
