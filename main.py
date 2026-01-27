@@ -66,6 +66,8 @@ from src.statemachine.systemMode import SystemMode
 
 # ------ New component imports starts here ------#
 from src.data.Artificial_Vision.processArtificial_Vision import processArtificial_Vision
+from src.data.Controller.processController import processController
+
 # ------ New component imports ends here ------#
 
 # ===================================== SHUTDOWN HELPER ====================================
