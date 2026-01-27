@@ -64,11 +64,9 @@ from src.utils.messages.allMessages import StateChange
 from src.statemachine.stateMachine import StateMachine
 from src.statemachine.systemMode import SystemMode
 
-# ------ New component imports starts here ------#
+# ------ EWolf Components ------#
 from src.data.Artificial_Vision.processArtificial_Vision import processArtificial_Vision
 from src.data.Controller.processController import processController
-
-# ------ New component imports ends here ------#
 
 # ===================================== SHUTDOWN HELPER ====================================
 def shutdown_process(process, timeout=1):
@@ -84,7 +82,7 @@ def shutdown_process(process, timeout=1):
 # ===================================== MAIN EXECUTION ==================================
 if __name__ == '__main__':
     import multiprocessing
-    # Forcing 'spawn' is critical for Windows and Python 3.14 stability.
+    # Forcing 'spawn' is critical for Windows and Python stability.
     multiprocessing.set_start_method('spawn', force=True) 
 
     print(BigPrint.PLEASE_WAIT.value)
@@ -101,45 +99,40 @@ if __name__ == '__main__':
     stateChangeSubscriber = messageHandlerSubscriber(queueList, StateChange, "lastOnly", True)
     StateMachine.initialize_shared_state(queueList)
 
-    # Start Gateway: The central message hub
+    # 1. Start Gateway: The central message hub
     pGateway = processGateway(queueList, logging)
     pGateway.start()
 
-   # --- STARTING THE DASHBOARD SAFELY ---
+    # 2. STARTING THE DASHBOARD
     dashboard_ready = Event()
-    
-    # We pass the class and the arguments
-    # This avoid Windows to try to "picklear" thr Flask object
-    pDashboard = processDashboard(
-        queueList, 
-        logging, 
-        dashboard_ready, 
-        debugging=False
-    )
+    pDashboard = processDashboard(queueList, logging, dashboard_ready, debugging=False)
     pDashboard.daemon = True
     pDashboard.start()
 
-    # --- STARTING ARTIFICIAL VISION ---
+    # 3. STARTING ARTIFICIAL VISION (Angel's Part)
     Artificial_Vision_ready = Event()
-    pVision = processArtificial_Vision(
-        queueList, 
-        logging, 
-        Artificial_Vision_ready, 
-        debugging=False
-    )
+    pVision = processArtificial_Vision(queueList, logging, Artificial_Vision_ready, debugging=False)
     pVision.daemon = True
     pVision.start()
-    # --- STARTING SERIAL HANDLER ---
+
+    # 4. STARTING CONTROLLER (Adri's Part - Integrated)
+    Controller_ready = Event()
+    pController = processController(queueList, logging, Controller_ready, debugging=False)
+    pController.daemon = True
+    pController.start()
+
+    # 5. STARTING SERIAL HANDLER
     pSerial = processSerialHandler(queueList, logging, debugging=False)
     pSerial.daemon = True
     pSerial.start()
 
-    # --- STAYING ALIVE ---
+    # ===================================== STAYING ALIVE ==================================
     blocker = Event()
     try:
-        # Wait for signals from the Dashboard and Vision logic
+        # Wait for all critical processes to be ready
         dashboard_ready.wait()
         Artificial_Vision_ready.wait()
+        Controller_ready.wait() # Now we wait for the Stanley Controller too!
 
         StateMachine.initialize_starting_mode()
 
@@ -148,12 +141,14 @@ if __name__ == '__main__':
         print(BigPrint.PRESS_CTRL_C.value)
 
         while True:
-            # Stay alive and listen for state changes (e.g., HighwayZone detection)
+            # Stay alive and listen for state changes
             message = stateChangeSubscriber.receive()
             blocker.wait(0.1)
 
     except KeyboardInterrupt:
-        print("\nShutting down system safely...\n")
+        print("\n[EWolf] Shutting down system safely...\n")
+        # Stop all processes in reverse order
+        pController.stop()
         pVision.stop()
         pDashboard.stop()
         pSerial.stop()
