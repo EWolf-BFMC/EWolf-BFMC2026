@@ -315,3 +315,11 @@ class HighwayZone(Enum):
 
 ### It will have this format: {"WarningName":"name1", "WarningID": 1}
 
+################################# From ControlProcess ##################################
+
+#Lane Data that gooes to the Lane controller thread
+class StanleyControl(Enum):
+    Queue = "General"
+    Owner = "processController"
+    msgID = 1  
+    msgType = "dict"

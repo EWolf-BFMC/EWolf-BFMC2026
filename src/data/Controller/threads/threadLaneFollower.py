@@ -22,18 +22,18 @@ class threadLaneFollower(ThreadWithStop):
     def subscribe(self):
         """Subscribe to perception data (vision) and system state"""
         self.messageHandlerSubscriber.subscribe_to_message(StanleyControl)
-        self.messageHandlerSubscriber.subscribe_to_message(State)
+        self.messageHandlerSubscriber.subscribe_to_message(StateChange)
 
     def thread_work(self):
         """Main loop with safety filter based on current mode"""
         while not self.is_stopped():
             # 1. UPDATE SYSTEM MODE (Listening to StateMachine/Dashboard)
-            state_msg = self.messageHandlerSubscriber.get_message(State)
+            state_msg = self.messageHandlerSubscriber.get_message(StateChange)
             if state_msg:
                 self.current_mode = state_msg['value']
 
-            # 2. ACTUATION LOGIC: Only execute if mode is 'Automated'
-            if self.current_mode == "Automated":
+            # 2. ACTUATION LOGIC: Only execute if mode is 'AUTO'
+            if self.current_mode == "AUTO":
                 vision_message = self.messageHandlerSubscriber.get_message(StanleyControl)
 
                 if vision_message:
@@ -53,16 +53,18 @@ class threadLaneFollower(ThreadWithStop):
                     # Dispatch commands to actuator queues
                     self.send_commands(v, steering_angle)
             else:
-                # Standby mode: Do not send commands if mode is not Automated
+                # Standby mode: Do not send commands if mode is not AUTO
                 pass
 
     def send_commands(self, speed, steer):
         """Publish speed and steering values to motor control threads"""
-        self.messageHandlerSender.send_message(SpeedMotor, {"value": speed})
-        self.messageHandlerSender.send_message(SteerMotor, {"value": steer})
+        speed_int = int(speed * 300)    #Transform speed from float to int
+        steer_deg = int(np.rad2deg(steer))  #Transform into rad
+        self.messageHandlerSender.send_message(SpeedMotor, str(speed_int))
+        self.messageHandlerSender.send_message(SteerMotor, str(steer_deg))
 
         if self.debugging:
-            self.logging.info(f"Status: {self.current_mode} | V: {speed:.2f} | Steer: {steer:.2f}")
+            self.logging.info(f"Status: {self.current_mode} | Vel: {speed_int} | Steer: {steer_deg}")
 
     def state_change_handler(self):
         """Handle specific transitions if required by the competition architecture"""
