@@ -27,9 +27,28 @@ class LaneDetector(ThreadWithStop):
                 # 2. Lane and Zone Detection for 35cm lane
                 error, is_highway = self.calculate_lane_error(bev_frame)
                 
+<<<<<<< Updated upstream
                 # 3. Notify the 'Brain' if we are in Highway (lines of 9cm)
                 if is_highway:
                     self.notify_highway(True)
+=======
+                # 2. Technical Analysis: Extracting lateral and angle errors
+                lateral_error, heading_error, is_highway = self.calculate_lane_data(bev_frame)
+                
+                # 3. THE ASSIST: Packaging data using the NEW StanleyControl Enum
+                control_msg = {
+                    "Type": StanleyControl,  # Official registered message type
+                    "Value": {
+                        "e_y": lateral_error,     # Lateral distance error
+                        "theta_e": heading_error,  # Angle relative to the lane
+                        "speed": 0.5 if is_highway else 0.3 # Turbo mode detection
+                    },
+                    "Owner": "processController"
+                }
+                
+                # Sending packet to the General Queue for the Brain to process
+                self.queuesList["General"].put(control_msg)
+>>>>>>> Stashed changes
 
     def apply_birds_eye(self, frame):
         """Flattens the image to see the 35cm lane from above"""
