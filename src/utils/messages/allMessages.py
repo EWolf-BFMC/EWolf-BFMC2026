@@ -58,6 +58,11 @@ class LaneKeeping(Enum):
     Owner = "threadCamera" # here you will send an offset of the car position between the lanes of the road + - from 0 point to dashboard
     msgID = 5
     msgType = "int"
+class StanleyControl(Enum):
+    Queue = "General"
+    Owner = "threadArtificial_Vision"
+    msgID = 6  
+    msgType = "dict"
 
 ################################# processCarsAndSemaphores ##################################
 class Cars(Enum):
