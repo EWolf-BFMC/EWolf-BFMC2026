@@ -1,71 +1,87 @@
+# Location: src/data/Controller/threads/threadLaneFollower.py
 import numpy as np
 from src.templates.threadwithstop import ThreadWithStop
-from src.utils.messages.allMessages import StanleyControl, SpeedMotor, SteerMotor, State
+from src.utils.messages.allMessages import StanleyControl, SpeedMotor, SteerMotor, StateChange
 
 class threadLaneFollower(ThreadWithStop):
-    def __init__(self, queueList, logging, debugging=False):
+    """
+    Autonomous Navigation Controller implementing the Stanley Control Law.
+    This thread only actuates when the system mode is set to 'AUTO'.
+    Manual control commands bypass this thread and are handled by the Gateway.
+    """
+    def __init__(self, messageHandlerSubscriber, queueList, logging, debugging=False):
+        self.messageHandlerSubscriber = messageHandlerSubscriber
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
-
-        # Stanley Controller Parameters
-        self.k = 0.55
-        self.ks = 0.1
-        self.max_steer = 0.436  # Limits steering to approx +/- 25 degrees
-
-        # Internal variable to track the system state from the State Machine
-        self.current_mode = "Manual"
-
+        
+        # --- Stanley Controller Parameters ---
+        self.k = 0.55             # Convergence gain
+        self.ks = 0.1             # Softening constant
+        self.max_steer = 0.436    # Max steering limit (~25 degrees)
+        
+        # --- Operational State ---
+        self.current_mode = "MANUAL" 
+        
         self.subscribe()
         super(threadLaneFollower, self).__init__()
 
     def subscribe(self):
-        """Subscribe to perception data (vision) and system state"""
-        self.messageHandlerSubscriber.subscribe_to_message(StanleyControl)
-        self.messageHandlerSubscriber.subscribe_to_message(StateChange)
+        """
+        Starts the subscription for the pre-configured message streams.
+        The messages (StanleyControl and StateChange) were already 
+        defined in the processController.py file.
+        """
+        # --- CORRECTION APPLIED HERE ---
+        # Just call .subscribe() without arguments. 
+        # The subscriber already knows to listen to StanleyControl and StateChange.
+        self.messageHandlerSubscriber.subscribe() 
 
     def thread_work(self):
-        """Main loop with safety filter based on current mode"""
-        while not self.is_stopped():
-            # 1. UPDATE SYSTEM MODE (Listening to StateMachine/Dashboard)
+        """Main Loop: Mode Synchronization -> Stanley Calculation -> Actuation."""
+        while not self._is_stopped:
+            # 1. SYNC SYSTEM MODE
             state_msg = self.messageHandlerSubscriber.get_message(StateChange)
             if state_msg:
-                self.current_mode = state_msg['value']
+                # Synchronize mode (forcing uppercase for reliability)
+                self.current_mode = str(state_msg['value']).upper()
 
-            # 2. ACTUATION LOGIC: Only execute if mode is 'AUTO'
+            # 2. AUTONOMOUS GATEKEEPER
             if self.current_mode == "AUTO":
                 vision_message = self.messageHandlerSubscriber.get_message(StanleyControl)
-
+                
                 if vision_message:
+                    # Extract perception data
                     data = vision_message['Value']
-                    e_y = data['e_y']      # Lateral error
-                    theta_e = data['theta_e']  # Heading error
-                    v = data['speed']      # Current velocity
-
-                    # Stanley Control Law Calculation:
-                    # $$\delta(t) = \theta_e(t) + \arctan\left(\frac{k \cdot e_y(t)}{v(t) + k_s}\right)$$
+                    e_y = data['e_y']         
+                    theta_e = data['theta_e'] 
+                    v = data['speed']         
+                    
+                    # 3. STANLEY CONTROL LAW
                     steering_adj = np.arctan2(self.k * e_y, v + self.ks)
                     steering_angle = theta_e + steering_adj
-
-                    # Output saturation to protect steering hardware
+                    
+                    # 4. HARDWARE PROTECTION
                     steering_angle = np.clip(steering_angle, -self.max_steer, self.max_steer)
-
-                    # Dispatch commands to actuator queues
+                    
+                    # 5. DISPATCH COMMANDS
                     self.send_commands(v, steering_angle)
+                    
+                    # 6. TELEMETRY / DEBUG MODE 
+                    if self.debugging:
+                        self.logging.info(
+                            f"STANLEY DEBUG | Mode: {self.current_mode} | "
+                            f"e_y: {e_y:.2f} | th_e: {theta_e:.2f} | "
+                            f"Steer: {np.rad2deg(steering_angle):.1f} deg"
+                        )
             else:
-                # Standby mode: Do not send commands if mode is not AUTO
+                # Standby: Thread waits for 'AUTO' mode notification 
                 pass
 
     def send_commands(self, speed, steer):
-        """Publish speed and steering values to motor control threads"""
-        speed_int = int(speed * 300)    #Transform speed from float to int
-        steer_deg = int(np.rad2deg(steer))  #Transform into rad
-        self.messageHandlerSender.send_message(SpeedMotor, str(speed_int))
-        self.messageHandlerSender.send_message(SteerMotor, str(steer_deg))
-
-        if self.debugging:
-            self.logging.info(f"Status: {self.current_mode} | Vel: {speed_int} | Steer: {steer_deg}")
-
-    def state_change_handler(self):
-        """Handle specific transitions if required by the competition architecture"""
-        pass
+        """Publish speed and steering data to the actuators via General Queue."""
+        speed_int = int(speed * 300) 
+        steer_deg = int(np.rad2deg(steer))
+        
+        self.queuesList["General"].put({"Type": SpeedMotor, "Value": str(speed_int)})
+        self.queuesList["General"].put({"Type": SteerMotor, "Value": str(steer_deg)})

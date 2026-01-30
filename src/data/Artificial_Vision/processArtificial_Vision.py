@@ -1,33 +1,37 @@
-if __name__ == "__main__":
-    import sys
-    sys.path.insert(0, "../../..")
-
+# Location: src/data/Artificial_Vision/processArtificial_Vision.py
 from src.templates.workerprocess import WorkerProcess
 from src.data.Artificial_Vision.threads.LaneDetector import LaneDetector
+from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
+# We need to import mainCamera so the subscriber knows what to listen to
+from src.utils.messages.allMessages import mainCamera, StateChange
 
 class processArtificial_Vision(WorkerProcess):
-    """This process handles Artificial_Vision.
-    Args:
-        queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
-        logging (logging object): Made for debugging.
-        debugging (bool, optional): A flag for debugging. Defaults to False.
-    """
-
+    """Host process for Computer Vision threads."""
     def __init__(self, queueList, logging, ready_event=None, debugging=False):
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
-        super(processArtificial_Vision, self).__init__(self.queuesList, ready_event)
 
-    def state_change_handler(self):
-        pass
-
-    def process_work(self):
-        pass
+        # --- CORE CORRECTION ---
+        # We tune the "radio" to mainCamera so Angel's LaneDetector can receive frames.
+        # If Angel also needs to know the system mode, we can use a list: [mainCamera, StateChange]
+        self.messageHandlerSubscriber = messageHandlerSubscriber(
+            queueList, 
+            mainCamera, 
+            "lastOnly", 
+            True
+        )
+        
+        # We only pass 2 positional arguments to the parent class (WorkerProcess)
+        super(processArtificial_Vision, self).__init__(queueList, ready_event)
 
     def _init_threads(self):
-        """Create the Artificial_Vision Publisher thread and add to the list of threads."""
+        """Initialize and start the Lane Detection thread."""
+        # We pass the pre-configured subscriber instance to the thread
         Artificial_VisionTh = LaneDetector(
-            self.queuesList, self.logging, self.debugging
+            self.messageHandlerSubscriber, 
+            self.queuesList, 
+            self.logging, 
+            self.debugging
         )
         self.threads.append(Artificial_VisionTh)
