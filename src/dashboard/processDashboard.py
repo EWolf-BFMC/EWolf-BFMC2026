@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
 if __name__ == "__main__":
     import sys
     sys.path.insert(0, "../../..")
@@ -107,7 +108,9 @@ class processDashboard(WorkerProcess):
 
         # setup flask and socketio
         self.app = Flask(__name__)
-        self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='eventlet')
+        self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='threading',ping_timeout
+                                 =60,ping_interval=5,allow_eio3=True,allow_unsafe_werkzeug=True,
+                                 logger=False,engineio_logger=False)
         CORS(self.app, supports_credentials=True)
 
         # calibration

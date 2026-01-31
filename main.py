@@ -14,6 +14,7 @@ from src.utils.messages.allMessages import StateChange
 from src.statemachine.stateMachine import StateMachine
 from src.data.Artificial_Vision.processArtificial_Vision import processArtificial_Vision
 from src.data.Controller.processController import processController
+from src.dashboard.processDashboard import processDashboard
 
 if __name__ == '__main__':
     # Force 'fork' start method for stability on Linux/Raspberry Pi [cite: 86]
@@ -41,7 +42,10 @@ if __name__ == '__main__':
     pGateway.start()
 
     # Dashboard is commented out to avoid Flask pickling errors [cite: 104]
-    # pDashboard.start() 
+    dashboard_ready = Event()
+    pDashboard = processDashboard(queueList, logging, dashboard_ready, debugging=False)
+    pDashboard.daemon = True    
+    pDashboard.start() 
 
     # Vision Process readiness event
     Artificial_Vision_ready = Event()
