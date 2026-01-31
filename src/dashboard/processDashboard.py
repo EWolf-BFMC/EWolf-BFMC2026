@@ -338,8 +338,15 @@ class processDashboard(WorkerProcess):
         """Monitor and update hardware metrics periodically."""
         self.cpuCoreUsage = psutil.cpu_percent(interval=None, percpu=False)
         self.memoryUsage = psutil.virtual_memory().percent
-        self.cpuTemperature = round(psutil.sensors_temperatures()['cpu_thermal'][0].current)
-
+        try:
+            self.cpuTemperature = round(psutil.sensors_temperatures()['cpu_thermal'][0].current)
+        except (KeyError, AttributeError):
+            # If its not raspberry
+            try:
+                self.cpuTemperature = round(psutil.sensors_temperatures().get('coretemp', [None])[0].current)
+            except:
+                self.cpuTemperature = 0
+                
         eventlet.spawn_after(1, self.update_hardware_data)
 
 

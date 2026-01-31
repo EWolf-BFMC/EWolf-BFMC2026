@@ -39,117 +39,195 @@
 # ===================================== GENERAL IMPORTS ==================================
 
 # ===================================== GENERAL IMPORTS ==================================
+
 import sys
 import time
 import os
 import psutil
-from multiprocessing import Queue, Event
-import logging
-import logging.handlers
+import platform
 
-# Pin to CPU cores 0–3 for better performance allocation
+# Pin to CPU cores 0–3
 available_cores = list(range(psutil.cpu_count()))
 psutil.Process(os.getpid()).cpu_affinity(available_cores)
 
 sys.path.append(".")
+from multiprocessing import Queue, Event
 from src.utils.bigPrintMessages import BigPrint
 from src.utils.outputWriters import QueueWriter, MultiWriter
+import logging
+import logging.handlers
+
+logging.basicConfig(level=logging.INFO)
 
 # ===================================== PROCESS IMPORTS ==================================
+
 from src.gateway.processGateway import processGateway
 from src.dashboard.processDashboard import processDashboard
+# Only imports camera if is runnig in raspberry architecture
+is_raspberry = platform.machine() not in ['x86_64', 'AMD64', 'x86']
+if is_raspberry:
+    from src.hardware.camera.processCamera import processCamera
 from src.hardware.serialhandler.processSerialHandler import processSerialHandler
+from src.data.Semaphores.processSemaphores import processSemaphores
+from src.data.TrafficCommunication.processTrafficCommunication import processTrafficCommunication
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.allMessages import StateChange
 from src.statemachine.stateMachine import StateMachine
 from src.statemachine.systemMode import SystemMode
 
-# ------ EWolf Components ------#
+# ------ New component imports starts here ------#
 from src.data.Artificial_Vision.processArtificial_Vision import processArtificial_Vision
 from src.data.Controller.processController import processController
 
-# ===================================== SHUTDOWN HELPER ====================================
+# ------ New component imports ends here ------#
+
+# ===================================== SHUTDOWN PROCESS ====================================
+
 def shutdown_process(process, timeout=1):
-    """Gracefully shutdown a process to avoid memory leaks."""
+    """Helper function to gracefully shutdown a process."""
     process.join(timeout)
     if process.is_alive():
-        process.terminate()
-        process.join(timeout)
+        print(f"The process {process} cannot normally stop, it's blocked somewhere! Terminate it!")
+        process.terminate()  # force terminate if it won't stop
+        process.join(timeout)  # give it a moment to terminate
         if process.is_alive():
-            process.kill()
+            print(f"The process {process} is still alive after terminate, killing it!")
+            process.kill()  # last resort
     print(f"The process {process} stopped")
 
-# ===================================== MAIN EXECUTION ==================================
-if __name__ == '__main__':
-    import multiprocessing
-    # Forcing 'spawn' is critical for Windows and Python stability.
-    multiprocessing.set_start_method('spawn', force=True) 
+# ===================================== PROCESS MANAGEMENT ==================================
 
-    print(BigPrint.PLEASE_WAIT.value)
-    
-    # Initialize basic communication queues
-    queueList = {
-        "Critical": Queue(), "Warning": Queue(), "General": Queue(),
-        "Config": Queue(), "Log": Queue(),
-    }
-    
-    logging = logging.getLogger()
-    
-    # Setup shared system state
-    stateChangeSubscriber = messageHandlerSubscriber(queueList, StateChange, "lastOnly", True)
-    StateMachine.initialize_shared_state(queueList)
+def manage_process_life(process_class, process_instance, process_args, enabled, allProcesses):
+    """Start or stop a process based on the enabled flag."""
+    if enabled:
+        if process_instance is None:
+            process_instance = process_class(*process_args)
+            allProcesses.append(process_instance)
+            process_instance.start()
+    else:
+        if process_instance is not None and process_instance.is_alive():
+            shutdown_process(process_instance)
+            allProcesses.remove(process_instance)
+            process_instance = None
+    return process_instance 
 
-    # 1. Start Gateway: The central message hub
-    pGateway = processGateway(queueList, logging)
-    pGateway.start()
+# ======================================== SETTING UP ====================================
 
-    # 2. STARTING THE DASHBOARD
-    dashboard_ready = Event()
-    pDashboard = processDashboard(queueList, logging, dashboard_ready, debugging=False)
-    pDashboard.daemon = True
-    pDashboard.start()
+print(BigPrint.PLEASE_WAIT.value)
+allProcesses = list()
+allEvents = list()
 
-    # 3. STARTING ARTIFICIAL VISION (Angel's Part)
-    Artificial_Vision_ready = Event()
-    pVision = processArtificial_Vision(queueList, logging, Artificial_Vision_ready, debugging=False)
-    pVision.daemon = True
-    pVision.start()
+queueList = {
+    "Critical": Queue(),
+    "Warning": Queue(),
+    "General": Queue(),
+    "Config": Queue(),
+    "Log": Queue(),
+}
+logging = logging.getLogger()
 
-    # 4. STARTING CONTROLLER (Adri's Part - Integrated)
-    Controller_ready = Event()
-    pController = processController(queueList, logging, Controller_ready, debugging=False)
-    pController.daemon = True
-    pController.start()
+original_stdout = sys.stdout
+original_stderr = sys.stderr
 
-    # 5. STARTING SERIAL HANDLER
-    pSerial = processSerialHandler(queueList, logging, debugging=False)
-    pSerial.daemon = True
-    pSerial.start()
+queue_writer = QueueWriter(queueList["Log"])
+sys.stdout = MultiWriter(original_stdout, queue_writer)
+sys.stderr = MultiWriter(original_stderr, queue_writer)
 
-    # ===================================== STAYING ALIVE ==================================
-    blocker = Event()
-    try:
-        # Wait for all critical processes to be ready
-        dashboard_ready.wait()
-        Artificial_Vision_ready.wait()
-        Controller_ready.wait() # Now we wait for the Stanley Controller too!
+# ===================================== INITIALIZE ==================================
 
-        StateMachine.initialize_starting_mode()
+stateChangeSubscriber = messageHandlerSubscriber(queueList, StateChange, "lastOnly", True)
+StateMachine.initialize_shared_state(queueList)
 
-        time.sleep(2)
-        print(BigPrint.C4_BOMB.value)
-        print(BigPrint.PRESS_CTRL_C.value)
+# Initializing gateway
+processGateway = processGateway(queueList, logging)
+processGateway.start()
+# ===================================== INITIALIZE PROCESSES ==================================
 
-        while True:
-            # Stay alive and listen for state changes
-            message = stateChangeSubscriber.receive()
-            blocker.wait(0.1)
+# Initializing dashboard
+dashboard_ready = Event()
+processDashboard = processDashboard(queueList, logging, dashboard_ready, debugging = False)
 
-    except KeyboardInterrupt:
-        print("\n[EWolf] Shutting down system safely...\n")
-        # Stop all processes in reverse order
-        pController.stop()
-        pVision.stop()
-        pDashboard.stop()
-        pSerial.stop()
-        pGateway.stop()
+# Initializing camera only in raspberry
+if is_raspberry:
+    camera_ready = Event()
+    processCamera = processCamera(queueList, logging, camera_ready, debugging = False)
+    allProcesses.append(processCamera)
+    allEvents.append(camera_ready)
+
+# Initializing semaphores
+semaphore_ready = Event()
+processSemaphore = processSemaphores(queueList, logging, semaphore_ready, debugging = False)
+
+# Initializing GPS
+traffic_com_ready = Event()
+processTrafficCom = processTrafficCommunication(queueList, logging, 3, traffic_com_ready, debugging = False)
+
+# Initializing serial connection NUCLEO - > PI
+serial_handler_ready = Event()
+processSerialHandler = processSerialHandler(queueList, logging, serial_handler_ready, dashboard_ready, debugging = False)
+if is_raspberry:
+    allProcesses.append(processSerialHandler)
+    allEvents.append(serial_handler_ready)
+
+# Adding all processes to the list
+allProcesses.extend([processSemaphore, processTrafficCom, processDashboard])
+allEvents.extend([semaphore_ready, traffic_com_ready, dashboard_ready])
+
+# ------ New component initialize starts here ------#
+# Vision Component (E-Wolf)
+Vision_ready = Event()
+processVision = processArtificial_Vision(queueList, logging, Vision_ready, debugging = False)
+allProcesses.insert(0, processVision)
+allEvents.insert(0, Vision_ready)
+
+# Control Component (E-Wolf)
+Controller_ready = Event()
+processController = processController(queueList, logging, Controller_ready, debugging = False)
+allProcesses.insert(1, processController)
+allEvents.insert(1, Controller_ready)
+
+# ------ New component initialize ends here ------#
+
+# ===================================== START PROCESSES ==================================
+
+for process in allProcesses:
+    process.daemon = True
+    process.start()
+
+# ===================================== STAYING ALIVE ====================================
+
+blocker = Event()
+try:
+    # wait for all events to be set
+    for event in allEvents:
+        event.wait()
+
+    # apply starting mode
+    StateMachine.initialize_starting_mode()
+
+    time.sleep(10)
+    print(BigPrint.C4_BOMB.value)
+    print(BigPrint.PRESS_CTRL_C.value)
+
+    while True:
+        message = stateChangeSubscriber.receive()
+        if message is not None:
+            modeDictSemaphore = SystemMode[message].value["semaphore"]["process"]
+            modeDictTrafficCom = SystemMode[message].value["traffic_com"]["process"]
+
+            processSemaphore = manage_process_life(processSemaphores, processSemaphore, [queueList, logging, semaphore_ready, False], modeDictSemaphore["enabled"], allProcesses)
+            processTrafficCom = manage_process_life(processTrafficCommunication, processTrafficCom, [queueList, logging, 3, traffic_com_ready, False], modeDictTrafficCom["enabled"], allProcesses)
+
+        blocker.wait(0.1)
+
+except KeyboardInterrupt:
+    print("\nCatching a KeyboardInterruption exception! Shutdown all processes.\n")
+
+    for proc in reversed(allProcesses):
+        proc.stop()
+    processGateway.stop()
+
+    # wait for all processes to finish before exiting
+    for proc in reversed(allProcesses):
+        shutdown_process(proc)
+    shutdown_process(processGateway)

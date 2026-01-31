@@ -2,19 +2,32 @@ from src.templates.threadwithstop import ThreadWithStop
 # Importing the official Enum for communication 
 from src.utils.messages.allMessages import mainCamera, HighwayZone, StanleyControl  
 import cv2 
-import numpy as np 
+import numpy as np
+from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
+from src.utils.messages.messageHandlerSender import messageHandlerSender
 
 class LaneDetector(ThreadWithStop): 
-    def __init__(self, queueList, logging, debugging=False): 
+    def __init__(self, queueList, logging, ready_event=None, debugging=False): 
+        #Initialize empty thread
+        super(LaneDetector, self).__init__()
         self.queuesList = queueList 
         self.logging = logging 
-        self.debugging = debugging 
-        self.subscribe() 
-        super(LaneDetector, self).__init__() 
+        self.debugging = debugging
+        self.ready_event = ready_event
+
+        #Create HANDLERS manually:
+        self.messageHandlerSubscriber = messageHandlerSubscriber(self.queuesList, self.logging)
+        self.messageHandlerSender = messageHandlerSender(self.queuesList, self.logging)
+
+        #Let main know is ready
+        self.subscribe()
+        if self.ready_event is not None:
+            self.ready_event.set()
 
     def subscribe(self): 
         """Requests the official camera feed (VAR)""" 
-        self.messageHandlerSubscriber.subscribe_to_message(mainCamera, lastOnly=True) 
+            #lastOnly=True
+        super().subscribe(mainCamera)
 
     def thread_work(self): 
         """Main loop: Look -> Process -> Send data via the StanleyControl channel""" 

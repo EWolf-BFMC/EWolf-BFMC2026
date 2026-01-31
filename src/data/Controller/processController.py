@@ -1,4 +1,7 @@
-# --- Imports oficiales ---
+if __name__ == "__main__":
+    import sys
+    sys.path.insert(0, "../../..")
+    
 from src.templates.workerprocess import WorkerProcess
 from src.data.Controller.threads.threadLaneFollower import threadLaneFollower
 
@@ -12,7 +15,7 @@ class processController(WorkerProcess):
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
-        # Inicializamos el proceso padre
+        # Initialize father process
         super(processController, self).__init__(self.queuesList, ready_event)
 
     def _init_threads(self):
@@ -20,11 +23,11 @@ class processController(WorkerProcess):
         Hook method to initialize threads within this process.
         The WorkerProcess parent class calls this automatically.
         """
-        # Creamos la instancia de tu hilo de control
+        # Create Lane Control thread
         LaneFollowerTh = threadLaneFollower(
             self.queuesList, self.logging, self.debugging
         )
-        # Lo añadimos a la lista de hilos para que el proceso lo arranque
+        # Add it to the thread list
         self.threads.append(LaneFollowerTh)
 
     def state_change_handler(self):
