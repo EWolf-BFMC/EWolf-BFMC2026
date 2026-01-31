@@ -13,9 +13,9 @@ import {
   __toESM
 } from "./chunk-KBUIKKCC.js";
 
-// node_modules/parseuri/index.js
+// node_modules/ngx-socket-io/node_modules/parseuri/index.js
 var require_parseuri = __commonJS({
-  "node_modules/parseuri/index.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/parseuri/index.js"(exports, module) {
     var re = /^(?:(?![^:@]+:[^:@\/]*@)(http|https|ws|wss):\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?((?:[a-f0-9]{0,4}:){2,7}[a-f0-9]{0,4}|[^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/;
     var parts = ["source", "protocol", "authority", "userInfo", "user", "password", "host", "port", "relative", "path", "directory", "file", "query", "anchor"];
     module.exports = function parseuri(str) {
@@ -59,9 +59,9 @@ var require_parseuri = __commonJS({
   }
 });
 
-// node_modules/socket.io-client/node_modules/ms/index.js
+// node_modules/ngx-socket-io/node_modules/socket.io-client/node_modules/ms/index.js
 var require_ms = __commonJS({
-  "node_modules/socket.io-client/node_modules/ms/index.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/socket.io-client/node_modules/ms/index.js"(exports, module) {
     var s = 1e3;
     var m = s * 60;
     var h = m * 60;
@@ -157,9 +157,9 @@ var require_ms = __commonJS({
   }
 });
 
-// node_modules/socket.io-client/node_modules/debug/src/debug.js
+// node_modules/ngx-socket-io/node_modules/socket.io-client/node_modules/debug/src/debug.js
 var require_debug = __commonJS({
-  "node_modules/socket.io-client/node_modules/debug/src/debug.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/socket.io-client/node_modules/debug/src/debug.js"(exports, module) {
     exports = module.exports = createDebug.debug = createDebug["default"] = createDebug;
     exports.coerce = coerce;
     exports.disable = disable;
@@ -282,9 +282,9 @@ var require_debug = __commonJS({
   }
 });
 
-// node_modules/socket.io-client/node_modules/debug/src/browser.js
+// node_modules/ngx-socket-io/node_modules/socket.io-client/node_modules/debug/src/browser.js
 var require_browser = __commonJS({
-  "node_modules/socket.io-client/node_modules/debug/src/browser.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/socket.io-client/node_modules/debug/src/browser.js"(exports, module) {
     exports = module.exports = require_debug();
     exports.log = log;
     exports.formatArgs = formatArgs;
@@ -364,9 +364,9 @@ var require_browser = __commonJS({
   }
 });
 
-// node_modules/socket.io-client/lib/url.js
+// node_modules/ngx-socket-io/node_modules/socket.io-client/lib/url.js
 var require_url = __commonJS({
-  "node_modules/socket.io-client/lib/url.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/socket.io-client/lib/url.js"(exports, module) {
     var parseuri = require_parseuri();
     var debug = require_browser()("socket.io-client:url");
     module.exports = url;
@@ -410,9 +410,9 @@ var require_url = __commonJS({
   }
 });
 
-// node_modules/component-emitter/index.js
+// node_modules/ngx-socket-io/node_modules/socket.io-client/node_modules/component-emitter/index.js
 var require_component_emitter = __commonJS({
-  "node_modules/component-emitter/index.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/socket.io-client/node_modules/component-emitter/index.js"(exports, module) {
     if (typeof module !== "undefined") {
       module.exports = Emitter;
     }
@@ -498,9 +498,9 @@ var require_isarray = __commonJS({
   }
 });
 
-// node_modules/socket.io-client/node_modules/socket.io-parser/is-buffer.js
+// node_modules/ngx-socket-io/node_modules/socket.io-client/node_modules/socket.io-parser/is-buffer.js
 var require_is_buffer = __commonJS({
-  "node_modules/socket.io-client/node_modules/socket.io-parser/is-buffer.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/socket.io-client/node_modules/socket.io-parser/is-buffer.js"(exports, module) {
     module.exports = isBuf;
     var withNativeBuffer = typeof Buffer === "function" && typeof Buffer.isBuffer === "function";
     var withNativeArrayBuffer = typeof ArrayBuffer === "function";
@@ -513,9 +513,9 @@ var require_is_buffer = __commonJS({
   }
 });
 
-// node_modules/socket.io-client/node_modules/socket.io-parser/binary.js
+// node_modules/ngx-socket-io/node_modules/socket.io-client/node_modules/socket.io-parser/binary.js
 var require_binary = __commonJS({
-  "node_modules/socket.io-client/node_modules/socket.io-parser/binary.js"(exports) {
+  "node_modules/ngx-socket-io/node_modules/socket.io-client/node_modules/socket.io-parser/binary.js"(exports) {
     var isArray = require_isarray();
     var isBuf = require_is_buffer();
     var toString = Object.prototype.toString;
@@ -618,9 +618,9 @@ var require_binary = __commonJS({
   }
 });
 
-// node_modules/socket.io-client/node_modules/socket.io-parser/index.js
+// node_modules/ngx-socket-io/node_modules/socket.io-client/node_modules/socket.io-parser/index.js
 var require_socket = __commonJS({
-  "node_modules/socket.io-client/node_modules/socket.io-parser/index.js"(exports) {
+  "node_modules/ngx-socket-io/node_modules/socket.io-client/node_modules/socket.io-parser/index.js"(exports) {
     var debug = require_browser()("socket.io-parser");
     var Emitter = require_component_emitter();
     var binary = require_binary();
@@ -839,9 +839,9 @@ var require_has_cors = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/lib/globalThis.browser.js
+// node_modules/ngx-socket-io/node_modules/engine.io-client/lib/globalThis.browser.js
 var require_globalThis_browser = __commonJS({
-  "node_modules/engine.io-client/lib/globalThis.browser.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-client/lib/globalThis.browser.js"(exports, module) {
     module.exports = function() {
       if (typeof self !== "undefined") {
         return self;
@@ -854,9 +854,9 @@ var require_globalThis_browser = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/lib/transports/xmlhttprequest.browser.js
+// node_modules/ngx-socket-io/node_modules/engine.io-client/lib/transports/xmlhttprequest.browser.js
 var require_xmlhttprequest_browser = __commonJS({
-  "node_modules/engine.io-client/lib/transports/xmlhttprequest.browser.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-client/lib/transports/xmlhttprequest.browser.js"(exports, module) {
     var hasCORS = require_has_cors();
     var globalThis = require_globalThis_browser();
     module.exports = function(opts) {
@@ -885,9 +885,9 @@ var require_xmlhttprequest_browser = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/node_modules/engine.io-parser/lib/keys.js
+// node_modules/ngx-socket-io/node_modules/engine.io-parser/lib/keys.js
 var require_keys = __commonJS({
-  "node_modules/engine.io-client/node_modules/engine.io-parser/lib/keys.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-parser/lib/keys.js"(exports, module) {
     module.exports = Object.keys || function keys(obj) {
       var arr = [];
       var has = Object.prototype.hasOwnProperty;
@@ -997,9 +997,9 @@ var require_after = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/node_modules/engine.io-parser/lib/utf8.js
+// node_modules/ngx-socket-io/node_modules/engine.io-parser/lib/utf8.js
 var require_utf8 = __commonJS({
-  "node_modules/engine.io-client/node_modules/engine.io-parser/lib/utf8.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-parser/lib/utf8.js"(exports, module) {
     var stringFromCharCode = String.fromCharCode;
     function ucs2decode(string) {
       var output = [];
@@ -1274,9 +1274,9 @@ var require_blob = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/node_modules/engine.io-parser/lib/browser.js
+// node_modules/ngx-socket-io/node_modules/engine.io-parser/lib/browser.js
 var require_browser2 = __commonJS({
-  "node_modules/engine.io-client/node_modules/engine.io-parser/lib/browser.js"(exports) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-parser/lib/browser.js"(exports) {
     var keys = require_keys();
     var hasBinary = require_has_binary2();
     var sliceBuffer = require_arraybuffer();
@@ -1670,11 +1670,89 @@ var require_browser2 = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/lib/transport.js
+// node_modules/ngx-socket-io/node_modules/engine.io-client/node_modules/component-emitter/index.js
+var require_component_emitter2 = __commonJS({
+  "node_modules/ngx-socket-io/node_modules/engine.io-client/node_modules/component-emitter/index.js"(exports, module) {
+    if (typeof module !== "undefined") {
+      module.exports = Emitter;
+    }
+    function Emitter(obj) {
+      if (obj) return mixin(obj);
+    }
+    function mixin(obj) {
+      for (var key in Emitter.prototype) {
+        obj[key] = Emitter.prototype[key];
+      }
+      return obj;
+    }
+    Emitter.prototype.on = Emitter.prototype.addEventListener = function(event, fn) {
+      this._callbacks = this._callbacks || {};
+      (this._callbacks["$" + event] = this._callbacks["$" + event] || []).push(fn);
+      return this;
+    };
+    Emitter.prototype.once = function(event, fn) {
+      function on() {
+        this.off(event, on);
+        fn.apply(this, arguments);
+      }
+      on.fn = fn;
+      this.on(event, on);
+      return this;
+    };
+    Emitter.prototype.off = Emitter.prototype.removeListener = Emitter.prototype.removeAllListeners = Emitter.prototype.removeEventListener = function(event, fn) {
+      this._callbacks = this._callbacks || {};
+      if (0 == arguments.length) {
+        this._callbacks = {};
+        return this;
+      }
+      var callbacks = this._callbacks["$" + event];
+      if (!callbacks) return this;
+      if (1 == arguments.length) {
+        delete this._callbacks["$" + event];
+        return this;
+      }
+      var cb;
+      for (var i = 0; i < callbacks.length; i++) {
+        cb = callbacks[i];
+        if (cb === fn || cb.fn === fn) {
+          callbacks.splice(i, 1);
+          break;
+        }
+      }
+      if (callbacks.length === 0) {
+        delete this._callbacks["$" + event];
+      }
+      return this;
+    };
+    Emitter.prototype.emit = function(event) {
+      this._callbacks = this._callbacks || {};
+      var args = new Array(arguments.length - 1), callbacks = this._callbacks["$" + event];
+      for (var i = 1; i < arguments.length; i++) {
+        args[i - 1] = arguments[i];
+      }
+      if (callbacks) {
+        callbacks = callbacks.slice(0);
+        for (var i = 0, len = callbacks.length; i < len; ++i) {
+          callbacks[i].apply(this, args);
+        }
+      }
+      return this;
+    };
+    Emitter.prototype.listeners = function(event) {
+      this._callbacks = this._callbacks || {};
+      return this._callbacks["$" + event] || [];
+    };
+    Emitter.prototype.hasListeners = function(event) {
+      return !!this.listeners(event).length;
+    };
+  }
+});
+
+// node_modules/ngx-socket-io/node_modules/engine.io-client/lib/transport.js
 var require_transport = __commonJS({
-  "node_modules/engine.io-client/lib/transport.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-client/lib/transport.js"(exports, module) {
     var parser = require_browser2();
-    var Emitter = require_component_emitter();
+    var Emitter = require_component_emitter2();
     module.exports = Transport;
     function Transport(opts) {
       this.path = opts.path;
@@ -1749,9 +1827,9 @@ var require_transport = __commonJS({
   }
 });
 
-// node_modules/parseqs/index.js
+// node_modules/ngx-socket-io/node_modules/parseqs/index.js
 var require_parseqs = __commonJS({
-  "node_modules/parseqs/index.js"(exports) {
+  "node_modules/ngx-socket-io/node_modules/parseqs/index.js"(exports) {
     exports.encode = function(obj) {
       var str = "";
       for (var i in obj) {
@@ -1824,9 +1902,9 @@ var require_yeast = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/node_modules/ms/index.js
+// node_modules/ngx-socket-io/node_modules/engine.io-client/node_modules/ms/index.js
 var require_ms2 = __commonJS({
-  "node_modules/engine.io-client/node_modules/ms/index.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-client/node_modules/ms/index.js"(exports, module) {
     var s = 1e3;
     var m = s * 60;
     var h = m * 60;
@@ -1922,9 +2000,9 @@ var require_ms2 = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/node_modules/debug/src/debug.js
+// node_modules/ngx-socket-io/node_modules/engine.io-client/node_modules/debug/src/debug.js
 var require_debug2 = __commonJS({
-  "node_modules/engine.io-client/node_modules/debug/src/debug.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-client/node_modules/debug/src/debug.js"(exports, module) {
     exports = module.exports = createDebug.debug = createDebug["default"] = createDebug;
     exports.coerce = coerce;
     exports.disable = disable;
@@ -2047,9 +2125,9 @@ var require_debug2 = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/node_modules/debug/src/browser.js
+// node_modules/ngx-socket-io/node_modules/engine.io-client/node_modules/debug/src/browser.js
 var require_browser3 = __commonJS({
-  "node_modules/engine.io-client/node_modules/debug/src/browser.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-client/node_modules/debug/src/browser.js"(exports, module) {
     exports = module.exports = require_debug2();
     exports.log = log;
     exports.formatArgs = formatArgs;
@@ -2129,9 +2207,9 @@ var require_browser3 = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/lib/transports/polling.js
+// node_modules/ngx-socket-io/node_modules/engine.io-client/lib/transports/polling.js
 var require_polling = __commonJS({
-  "node_modules/engine.io-client/lib/transports/polling.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-client/lib/transports/polling.js"(exports, module) {
     var Transport = require_transport();
     var parseqs = require_parseqs();
     var parser = require_browser2();
@@ -2268,12 +2346,12 @@ var require_polling = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/lib/transports/polling-xhr.js
+// node_modules/ngx-socket-io/node_modules/engine.io-client/lib/transports/polling-xhr.js
 var require_polling_xhr = __commonJS({
-  "node_modules/engine.io-client/lib/transports/polling-xhr.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-client/lib/transports/polling-xhr.js"(exports, module) {
     var XMLHttpRequest2 = require_xmlhttprequest_browser();
     var Polling = require_polling();
-    var Emitter = require_component_emitter();
+    var Emitter = require_component_emitter2();
     var inherit = require_component_inherit();
     var debug = require_browser3()("engine.io-client:polling-xhr");
     var globalThis = require_globalThis_browser();
@@ -2537,9 +2615,9 @@ var require_polling_xhr = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/lib/transports/polling-jsonp.js
+// node_modules/ngx-socket-io/node_modules/engine.io-client/lib/transports/polling-jsonp.js
 var require_polling_jsonp = __commonJS({
-  "node_modules/engine.io-client/lib/transports/polling-jsonp.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-client/lib/transports/polling-jsonp.js"(exports, module) {
     var Polling = require_polling();
     var inherit = require_component_inherit();
     var globalThis = require_globalThis_browser();
@@ -2687,9 +2765,9 @@ var require_ws = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/lib/transports/websocket.js
+// node_modules/ngx-socket-io/node_modules/engine.io-client/lib/transports/websocket.js
 var require_websocket = __commonJS({
-  "node_modules/engine.io-client/lib/transports/websocket.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-client/lib/transports/websocket.js"(exports, module) {
     var Transport = require_transport();
     var parser = require_browser2();
     var parseqs = require_parseqs();
@@ -2858,9 +2936,9 @@ var require_websocket = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/lib/transports/index.js
+// node_modules/ngx-socket-io/node_modules/engine.io-client/lib/transports/index.js
 var require_transports = __commonJS({
-  "node_modules/engine.io-client/lib/transports/index.js"(exports) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-client/lib/transports/index.js"(exports) {
     var XMLHttpRequest2 = require_xmlhttprequest_browser();
     var XHR = require_polling_xhr();
     var JSONP = require_polling_jsonp();
@@ -2908,11 +2986,11 @@ var require_indexof = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/lib/socket.js
+// node_modules/ngx-socket-io/node_modules/engine.io-client/lib/socket.js
 var require_socket2 = __commonJS({
-  "node_modules/engine.io-client/lib/socket.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-client/lib/socket.js"(exports, module) {
     var transports = require_transports();
-    var Emitter = require_component_emitter();
+    var Emitter = require_component_emitter2();
     var debug = require_browser3()("engine.io-client:socket");
     var index = require_indexof();
     var parser = require_browser2();
@@ -3367,9 +3445,9 @@ var require_socket2 = __commonJS({
   }
 });
 
-// node_modules/engine.io-client/lib/index.js
+// node_modules/ngx-socket-io/node_modules/engine.io-client/lib/index.js
 var require_lib = __commonJS({
-  "node_modules/engine.io-client/lib/index.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/engine.io-client/lib/index.js"(exports, module) {
     module.exports = require_socket2();
     module.exports.parser = require_browser2();
   }
@@ -3390,9 +3468,9 @@ var require_to_array = __commonJS({
   }
 });
 
-// node_modules/socket.io-client/lib/on.js
+// node_modules/ngx-socket-io/node_modules/socket.io-client/lib/on.js
 var require_on = __commonJS({
-  "node_modules/socket.io-client/lib/on.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/socket.io-client/lib/on.js"(exports, module) {
     module.exports = on;
     function on(obj, ev, fn) {
       obj.on(ev, fn);
@@ -3420,9 +3498,9 @@ var require_component_bind = __commonJS({
   }
 });
 
-// node_modules/socket.io-client/lib/socket.js
+// node_modules/ngx-socket-io/node_modules/socket.io-client/lib/socket.js
 var require_socket3 = __commonJS({
-  "node_modules/socket.io-client/lib/socket.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/socket.io-client/lib/socket.js"(exports, module) {
     var parser = require_socket();
     var Emitter = require_component_emitter();
     var toArray = require_to_array();
@@ -3694,9 +3772,9 @@ var require_backo2 = __commonJS({
   }
 });
 
-// node_modules/socket.io-client/lib/manager.js
+// node_modules/ngx-socket-io/node_modules/socket.io-client/lib/manager.js
 var require_manager = __commonJS({
-  "node_modules/socket.io-client/lib/manager.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/socket.io-client/lib/manager.js"(exports, module) {
     var eio = require_lib();
     var Socket = require_socket3();
     var Emitter = require_component_emitter();
@@ -4008,9 +4086,9 @@ var require_manager = __commonJS({
   }
 });
 
-// node_modules/socket.io-client/lib/index.js
+// node_modules/ngx-socket-io/node_modules/socket.io-client/lib/index.js
 var require_lib2 = __commonJS({
-  "node_modules/socket.io-client/lib/index.js"(exports, module) {
+  "node_modules/ngx-socket-io/node_modules/socket.io-client/lib/index.js"(exports, module) {
     var url = require_url();
     var parser = require_socket();
     var Manager = require_manager();

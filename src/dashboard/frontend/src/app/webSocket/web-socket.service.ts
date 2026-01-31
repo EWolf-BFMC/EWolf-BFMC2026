@@ -50,7 +50,7 @@ export class WebSocketService {
 
   constructor() {
     this.webSocket = new Socket({
-      url: "http://192.168.1.85:5005",
+      url: "http://172.31.82.69:5005",
       options: {},
     });
 
@@ -88,6 +88,7 @@ export class WebSocketService {
   }
 
   sendMessageToFlask(message: any) {
+    console.log("Sending password...", message);
     this.webSocket.emit('message', message);
   }
 
