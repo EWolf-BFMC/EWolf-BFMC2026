@@ -20,7 +20,7 @@ sudo chmod +x "$DEST_DIR/start-dashboard.sh"
 
 # Log file
 sudo touch "$LOG_FILE"
-sudo chown pi:pi "$LOG_FILE"
+sudo chown ewolf:ewolf "$LOG_FILE"
 sudo chmod 0644 "$LOG_FILE"
 
 # Install (or update) systemd unit
