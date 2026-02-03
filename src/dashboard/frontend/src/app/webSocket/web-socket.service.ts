@@ -25,10 +25,10 @@
 // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 import { Injectable } from '@angular/core';
 import { Socket } from 'ngx-socket-io';
 import { Observable, Subject } from 'rxjs';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -39,48 +39,33 @@ export class WebSocketService {
 
   private eventSubject = new Subject<{ channel: string, data: any }>();
   private handledEvents = new Set([
-    'heartbeat',
-    'heartbeat_disconnect',
-    'StateChange',
-    'memory_channel',
-    'cpu_channel',
-    'disk_channel',
-    'webCamera',
-    'Location',
-    'Cars',
-    'Semaphores',
-    'after connect',
-    'InstantConsumption',
-    'loadBack',
-    'WarningSignal',
-    'response',
-    'BatteryLvl',
-    'ResourceMonitor',
-    'serialCamera',
-    'Recording',
-    'CurrentSpeed',
-    'CurrentSteer',
-    'EnableButton',
-    'SteeringLimits',
-    'Calibration',
-    'CalibPWMData',
-    'CalibRunDone',
-    'ImuAck',
-    'console_log'
+    'heartbeat', 'heartbeat_disconnect', 'StateChange', 'memory_channel',
+    'cpu_channel', 'disk_channel', 'webCamera', 'Location', 'Cars',
+    'Semaphores', 'after connect', 'InstantConsumption', 'loadBack',
+    'WarningSignal', 'response', 'BatteryLvl', 'ResourceMonitor',
+    'serialCamera', 'Recording', 'CurrentSpeed', 'CurrentSteer',
+    'EnableButton', 'SteeringLimits', 'Calibration', 'CalibPWMData',
+    'CalibRunDone', 'ImuAck', 'console_log'
   ]);
 
   constructor() {
     this.webSocket = new Socket({
+<<<<<<< HEAD
       url: "http://192.168.0.106:5005",
+=======
+      url: "http://172.31.82.69:5005",
+>>>>>>> origin/main
       options: {},
     });
 
-    // Listen for all messages from the WebSocket server
-    this.webSocket.onAny((eventName: string, data: any) => {
+    // CRITICAL: Commented out onAny to prevent the 'not a function' error
+    /*
+    this.webSocket.ioSocket.onAny((eventName: string, data: any) => {
       if (!this.handledEvents.has(eventName)) {
         this.eventSubject.next({ channel: eventName, data });
       }
     });
+    */
 
     this.webSocket.ioSocket.on('connect', () => {
       this.connectionStatusSubject.next('connected');
@@ -106,8 +91,8 @@ export class WebSocketService {
     });
   }
 
-  // Method to start connection/handshake with the server
   sendMessageToFlask(message: any) {
+    console.log("Sending password...", message);
     this.webSocket.emit('message', message);
   }
 
@@ -135,7 +120,6 @@ export class WebSocketService {
     return this.webSocket.fromEvent('current_serial_connection_state');
   }
 
-  // Method to receive memory usage updates
   receiveMemoryUsage(): Observable<any> {
     return this.webSocket.fromEvent('memory_channel');
   }
@@ -156,57 +140,46 @@ export class WebSocketService {
     return this.webSocket.fromEvent('loadBack');
   }
 
-  // Method to receive CPU usage updates
   receiveCpuUsage(): Observable<any> {
     return this.webSocket.fromEvent('cpu_channel');
   }
 
-  // Method to receive image updates
   receiveCamera(): Observable<any> {
     return this.webSocket.fromEvent('serialCamera');
   }
 
-  // Method to receive location updates
   receiveLocation(): Observable<any> {
     return this.webSocket.fromEvent('Location');
   }
 
-  // Method to get Enable Buton signal
   receiveEnableButton(): Observable<any> {
     return this.webSocket.fromEvent('EnableButton');
   }
 
-  // Method to receive cars location updates
   receiveCars(): Observable<any> {
     return this.webSocket.fromEvent('Cars');
   }
 
-  // Method to receive instant consumption updates
   receiveInstantConsumption(): Observable<any> {
     return this.webSocket.fromEvent('InstantConsumption');
   }
 
-  // Method to receive battery level updates
   receiveBatteryLevel(): Observable<any> {
     return this.webSocket.fromEvent('BatteryLvl');
   }
 
-  // Method to receive semaphores state updates
   receiveSemaphores(): Observable<any> {
     return this.webSocket.fromEvent('Semaphores');
   }
 
-  // Method to receive current speed state updates
   receiveCurrentSpeed(): Observable<any> {
     return this.webSocket.fromEvent('CurrentSpeed');
   }
 
-  // Method to receive current speed state updates
   receiveCurrentSteer(): Observable<any> {
     return this.webSocket.fromEvent('CurrentSteer');
   }
 
-  // Method to receive current speed state updates
   receiveSerialConnectionState(): Observable<any> {
     return this.webSocket.fromEvent('SerialConnectionState');
   }
@@ -232,7 +205,6 @@ export class WebSocketService {
     return this.webSocket.fromEvent('console_log');
   }
 
-  // Method to receive the initial connection confirmation
   onConnect(): Observable<any> {
     return this.webSocket.fromEvent('after connect');
   }
@@ -259,12 +231,10 @@ export class WebSocketService {
     return this.webSocket.ioSocket.connecting;
   }
 
-  // Method to end the WebSocket connection
   disconnectSocket() {
     this.webSocket.disconnect();
   }
 
-  // Method to receive any unhandled event
   receiveUnhandledEvents(): Observable<{ channel: string, data: any }> {
     return this.eventSubject.asObservable();
   }
