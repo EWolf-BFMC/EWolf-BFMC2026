@@ -1,23 +1,11 @@
-# Had to install 3.0 or newer, instead of 3.1 or newer
-Flask>=3.0,<3.2
+Flask>=3.1,<3.2
 Flask-SocketIO>=5.3.2,<6
 Flask-Cors>=4,<5
-# Minimum numpy version required by scipy 1.10.1
-numpy>=1.19.5
-# system has 7.0.0, that's fine
-psutil>=5.9.4
-#Uncoment only to install in raspberry
-#picamera2>=0.3.21
+psutil>=5.9.4          # system has 7.0.0, that's fine
+picamera2>=0.3.21
 eventlet>=0.36.1
-Twisted>=25.5.0
-pyOpenSSL>=25.3.0
-#Install any cryptography acording to the device
-cryptography>=44.0.0; platform_machine == "aarch64"
-cryptography>=46.0.0; platform_machine == "x86_64"
-# if wheel fails, use: sudo apt-get install -y python3-opencv
-opencv-python
+Twisted>=24.7.0
+cryptography>=43,<45
+opencv-python          # if wheel fails, use: sudo apt-get install -y python3-opencv
 pyserial==3.5
-# Had to install 1.10 or newer, instead of 1.15 or newer
-scipy>=1.10,<2
-# Required for manual keyboard control
-pynput
+scipy>=1.15,<2

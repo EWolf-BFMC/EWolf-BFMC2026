@@ -6,10 +6,10 @@ ConditionPathExists=/opt/angular-autostart/start-dashboard.sh
 
 [Service]
 Type=simple
-User=pi
-Group=pi
-WorkingDirectory=/home/pi/Documents/Brain/src/dashboard/frontend
-Environment=HOME=/home/pi
+User=ewolf
+Group=ewolf
+WorkingDirectory=/home/ewolf/Documents/Brain/src/dashboard/frontend
+Environment=HOME=/home/ewolf
 EnvironmentFile=/opt/angular-autostart/config.env
 ExecStart=/opt/angular-autostart/start-dashboard.sh
 Restart=always

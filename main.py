@@ -38,13 +38,10 @@
 #
 # ===================================== GENERAL IMPORTS ==================================
 
-# ===================================== GENERAL IMPORTS ==================================
-
 import sys
 import time
 import os
 import psutil
-import platform
 
 # Pin to CPU cores 0–3
 available_cores = list(range(psutil.cpu_count()))
@@ -63,10 +60,7 @@ logging.basicConfig(level=logging.INFO)
 
 from src.gateway.processGateway import processGateway
 from src.dashboard.processDashboard import processDashboard
-# Only imports camera if is runnig in raspberry architecture
-is_raspberry = platform.machine() not in ['x86_64', 'AMD64', 'x86']
-if is_raspberry:
-    from src.hardware.camera.processCamera import processCamera
+from src.hardware.camera.processCamera import processCamera
 from src.hardware.serialhandler.processSerialHandler import processSerialHandler
 from src.data.Semaphores.processSemaphores import processSemaphores
 from src.data.TrafficCommunication.processTrafficCommunication import processTrafficCommunication
@@ -76,8 +70,9 @@ from src.statemachine.stateMachine import StateMachine
 from src.statemachine.systemMode import SystemMode
 
 # ------ New component imports starts here ------#
-from src.data.Artificial_Vision.processArtificial_Vision import processArtificial_Vision
-from src.data.Controller.processController import processController
+
+from src.perception.Perception.processPerception import processPerception
+from src.control.Control.processControl import processControl
 
 # ------ New component imports ends here ------#
 
@@ -141,18 +136,16 @@ StateMachine.initialize_shared_state(queueList)
 # Initializing gateway
 processGateway = processGateway(queueList, logging)
 processGateway.start()
+
 # ===================================== INITIALIZE PROCESSES ==================================
 
 # Initializing dashboard
 dashboard_ready = Event()
 processDashboard = processDashboard(queueList, logging, dashboard_ready, debugging = False)
 
-# Initializing camera only in raspberry
-if is_raspberry:
-    camera_ready = Event()
-    processCamera = processCamera(queueList, logging, camera_ready, debugging = False)
-    allProcesses.append(processCamera)
-    allEvents.append(camera_ready)
+# Initializing camera
+camera_ready = Event()
+processCamera = processCamera(queueList, logging, camera_ready, debugging = False)
 
 # Initializing semaphores
 semaphore_ready = Event()
@@ -165,26 +158,20 @@ processTrafficCom = processTrafficCommunication(queueList, logging, 3, traffic_c
 # Initializing serial connection NUCLEO - > PI
 serial_handler_ready = Event()
 processSerialHandler = processSerialHandler(queueList, logging, serial_handler_ready, dashboard_ready, debugging = False)
-if is_raspberry:
-    allProcesses.append(processSerialHandler)
-    allEvents.append(serial_handler_ready)
 
 # Adding all processes to the list
-allProcesses.extend([processSemaphore, processTrafficCom, processDashboard])
-allEvents.extend([semaphore_ready, traffic_com_ready, dashboard_ready])
+allProcesses.extend([processCamera, processSemaphore, processTrafficCom, processSerialHandler, processDashboard])
+allEvents.extend([camera_ready, semaphore_ready, traffic_com_ready, serial_handler_ready, dashboard_ready])
 
 # ------ New component initialize starts here ------#
-# Vision Component (E-Wolf)
-Vision_ready = Event()
-processVision = processArtificial_Vision(queueList, logging, Vision_ready, debugging = False)
-allProcesses.insert(0, processVision)
-allEvents.insert(0, Vision_ready)
 
-# Control Component (E-Wolf)
-Controller_ready = Event()
-processController = processController(queueList, logging, Controller_ready, debugging = False)
-allProcesses.insert(1, processController)
-allEvents.insert(1, Controller_ready)
+Perception_ready = Event()
+processPerception = processPerception(queueList, logging, Perception_ready, debugging = False)
+allProcesses.insert(0, processPerception)
+
+Control_ready = Event()
+processControl = processControl(queueList, logging, Control_ready, debugging = False)
+allProcesses.insert(0, processControl)
 
 # ------ New component initialize ends here ------#
 

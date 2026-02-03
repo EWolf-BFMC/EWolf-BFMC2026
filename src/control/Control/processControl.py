@@ -3,10 +3,10 @@ if __name__ == "__main__":
     sys.path.insert(0, "../../..")
 
 from src.templates.workerprocess import WorkerProcess
-from src.data.Artificial_Vision.threads.LaneDetector import LaneDetector
+from src.control.Control.threads.threadStanley import threadStanley
 
-class processArtificial_Vision(WorkerProcess):
-    """This process handles Artificial_Vision.
+class processControl(WorkerProcess):
+    """This process handles Control.
     Args:
         queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
         logging (logging object): Made for debugging.
@@ -17,7 +17,7 @@ class processArtificial_Vision(WorkerProcess):
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
-        super(processArtificial_Vision, self).__init__(self.queuesList, ready_event)
+        super(processControl, self).__init__(self.queuesList, ready_event)
 
     def state_change_handler(self):
         pass
@@ -26,8 +26,8 @@ class processArtificial_Vision(WorkerProcess):
         pass
 
     def _init_threads(self):
-        """Create the Artificial_Vision Publisher thread and add to the list of threads."""
-        Artificial_VisionTh = LaneDetector(
+        """Create the Control Publisher thread and add to the list of threads."""
+        StanleyTh = threadStanley(
             self.queuesList, self.logging, self.debugging
         )
-        self.threads.append(Artificial_VisionTh)
+        self.threads.append(StanleyTh)

@@ -23,7 +23,7 @@ sudo chmod +x "$DEST_DIR/monitor-dashboard.sh" "$DEST_DIR/start-brain.sh"
 
 # Log file
 sudo touch "$LOG_FILE"
-sudo chown pi:pi "$LOG_FILE"
+sudo chown ewolf:ewolf "$LOG_FILE"
 sudo chmod 0644 "$LOG_FILE"
 
 # Install systemd unit
