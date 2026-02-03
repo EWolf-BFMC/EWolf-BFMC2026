@@ -62,21 +62,11 @@ class SystemMode(Enum):
         "mode": "auto",
         "camera": {
             "process": {
-                "enabled": True,
+                "enabled": False,
             },
             "thread": {
                 "resolution": "480p",
             }
-        },
-        "artificial_vision": { # Makes sure the artificialvision is enabled
-            "process": {
-                "enabled": True
-                }
-        },
-        "controller": { # Turns the controller process on
-            "process": {
-                "enabled": True
-                }
         },
         "serial_handler": {
             "process": {

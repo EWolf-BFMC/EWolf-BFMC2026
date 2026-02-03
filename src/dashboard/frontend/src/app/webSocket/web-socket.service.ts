@@ -50,7 +50,11 @@ export class WebSocketService {
 
   constructor() {
     this.webSocket = new Socket({
+<<<<<<< HEAD
+      url: "http://192.168.0.106:5005",
+=======
       url: "http://172.31.82.69:5005",
+>>>>>>> origin/main
       options: {},
     });
 
@@ -178,6 +182,11 @@ export class WebSocketService {
 
   receiveSerialConnectionState(): Observable<any> {
     return this.webSocket.fromEvent('SerialConnectionState');
+  }
+
+  // Method to receive state change updates from backend
+  receiveStateChange(): Observable<any> {
+    return this.webSocket.fromEvent('StateChange');
   }
 
   receiveCalibrationData(): Observable<any> {

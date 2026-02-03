@@ -58,11 +58,6 @@ class LaneKeeping(Enum):
     Owner = "threadCamera" # here you will send an offset of the car position between the lanes of the road + - from 0 point to dashboard
     msgID = 5
     msgType = "int"
-class StanleyControl(Enum):
-    Queue = "General"
-    Owner = "threadArtificial_Vision"
-    msgID = 6  
-    msgType = "dict"
 
 ################################# processCarsAndSemaphores ##################################
 class Cars(Enum):
@@ -306,20 +301,11 @@ class StateChange(Enum):
     msgID = 1
     msgType = "str"
 
-#For the Highway
-class HighwayZone(Enum):
-    Queue = "General"
-    Owner = "stateMachine"
-    msgID = 2
-    msgType = "bool"
-
 ### It will have this format: {"WarningName":"name1", "WarningID": 1}
 
-################################# From ControlProcess ##################################
-
-#Lane Data that gooes to the Lane controller thread
-class StanleyControl(Enum):
-    Queue = "General"
-    Owner = "processController"
-    msgID = 1  
+################################# From Perception ##################################
+class StanleyControl(Enum):     #Lane error of the car
+    Queue = "General" 
+    Owner = "threadLane"
+    msgID = 1
     msgType = "dict"
