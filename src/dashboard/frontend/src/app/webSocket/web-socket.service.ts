@@ -26,216 +26,99 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { Injectable } from '@angular/core';
-import { Socket } from 'ngx-socket-io';
+import { io, Socket } from 'socket.io-client';
 import { Observable, Subject } from 'rxjs';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class WebSocketService {
-  private webSocket: Socket;
-  private connectionStatusSubject = new Subject<'connected' | 'disconnected' | 'error'>();
+
+  private socket: Socket;
+
+  private connectionStatusSubject =
+    new Subject<'connected' | 'disconnected' | 'error'>();
+
   connectionStatus$ = this.connectionStatusSubject.asObservable();
 
-  private eventSubject = new Subject<{ channel: string, data: any }>();
-  private handledEvents = new Set([
-    'heartbeat', 'heartbeat_disconnect', 'StateChange', 'memory_channel',
-    'cpu_channel', 'disk_channel', 'webCamera', 'Location', 'Cars',
-    'Semaphores', 'after connect', 'InstantConsumption', 'loadBack',
-    'WarningSignal', 'response', 'BatteryLvl', 'ResourceMonitor',
-    'serialCamera', 'Recording', 'CurrentSpeed', 'CurrentSteer',
-    'EnableButton', 'SteeringLimits', 'Calibration', 'CalibPWMData',
-    'CalibRunDone', 'ImuAck', 'console_log'
-  ]);
-
   constructor() {
-    this.webSocket = new Socket({
-<<<<<<< HEAD
-      url: "http://192.168.0.106:5005",
-=======
-      url: "http://172.31.82.69:5005",
->>>>>>> origin/main
-      options: {},
+    this.socket = io('http://ewolf.local:5005', {
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      timeout: 20000
     });
 
-    // CRITICAL: Commented out onAny to prevent the 'not a function' error
-    /*
-    this.webSocket.ioSocket.onAny((eventName: string, data: any) => {
-      if (!this.handledEvents.has(eventName)) {
-        this.eventSubject.next({ channel: eventName, data });
-      }
-    });
-    */
+    this.socket.on('connect', () =>
+      this.connectionStatusSubject.next('connected')
+    );
 
-    this.webSocket.ioSocket.on('connect', () => {
-      this.connectionStatusSubject.next('connected');
-    });
+    this.socket.on('disconnect', () =>
+      this.connectionStatusSubject.next('disconnected')
+    );
 
-    this.webSocket.ioSocket.on('disconnect', () => {
-      this.connectionStatusSubject.next('disconnected');
-    });
+    this.socket.on('connect_error', () =>
+      this.connectionStatusSubject.next('error')
+    );
+  }
 
-    this.webSocket.ioSocket.on('connect_error', (error: any) => {
-      this.connectionStatusSubject.next('error');
-    });
+  /* ================= CORE ================= */
 
-    this.webSocket.ioSocket.on('reconnect', () => {
-      this.connectionStatusSubject.next('connected');
-    });
-
-    this.webSocket.ioSocket.on('reconnect_attempt', () => {
-    });
-
-    this.webSocket.ioSocket.on('reconnect_error', (error: any) => {
-      this.connectionStatusSubject.next('error');
+  private fromEvent<T>(event: string): Observable<T> {
+    return new Observable(observer => {
+      this.socket.on(event, data => observer.next(data));
     });
   }
 
   sendMessageToFlask(message: any) {
-    console.log("Sending password...", message);
-    this.webSocket.emit('message', message);
+    this.socket.emit('message', message);
   }
 
   SaveTable(message: any) {
-    this.webSocket.emit('save', message);
+    this.socket.emit('save', message);
   }
 
   LoadTable(message: any) {
-    this.webSocket.emit('load', message);
-  }
-
-  receiveHeartbeat(): Observable<any> {
-    return this.webSocket.fromEvent('heartbeat');
-  }
-
-  receiveHeartbeatDisconnect(): Observable<any> {
-    return this.webSocket.fromEvent('heartbeat_disconnect');
-  }
-
-  receiveSessionAccess(): Observable<any> {
-    return this.webSocket.fromEvent('session_access');
-  }
-
-  receiveCurrentSerialConnectionState(): Observable<any> {
-    return this.webSocket.fromEvent('current_serial_connection_state');
-  }
-
-  receiveMemoryUsage(): Observable<any> {
-    return this.webSocket.fromEvent('memory_channel');
-  }
-
-  receiveImuData(): Observable<any> {
-    return this.webSocket.fromEvent('ImuData');
-  }
-
-  receiveResourceMonitor(): Observable<any> {
-    return this.webSocket.fromEvent('ResourceMonitor');
-  }
-
-  receiveWarningSignal(): Observable<any> {
-    return this.webSocket.fromEvent('WarningSignal');
-  }
-
-  receiveLoadTable(): Observable<any> {
-    return this.webSocket.fromEvent('loadBack');
-  }
-
-  receiveCpuUsage(): Observable<any> {
-    return this.webSocket.fromEvent('cpu_channel');
-  }
-
-  receiveCamera(): Observable<any> {
-    return this.webSocket.fromEvent('serialCamera');
-  }
-
-  receiveLocation(): Observable<any> {
-    return this.webSocket.fromEvent('Location');
-  }
-
-  receiveEnableButton(): Observable<any> {
-    return this.webSocket.fromEvent('EnableButton');
-  }
-
-  receiveCars(): Observable<any> {
-    return this.webSocket.fromEvent('Cars');
-  }
-
-  receiveInstantConsumption(): Observable<any> {
-    return this.webSocket.fromEvent('InstantConsumption');
-  }
-
-  receiveBatteryLevel(): Observable<any> {
-    return this.webSocket.fromEvent('BatteryLvl');
-  }
-
-  receiveSemaphores(): Observable<any> {
-    return this.webSocket.fromEvent('Semaphores');
-  }
-
-  receiveCurrentSpeed(): Observable<any> {
-    return this.webSocket.fromEvent('CurrentSpeed');
-  }
-
-  receiveCurrentSteer(): Observable<any> {
-    return this.webSocket.fromEvent('CurrentSteer');
-  }
-
-  receiveSerialConnectionState(): Observable<any> {
-    return this.webSocket.fromEvent('SerialConnectionState');
-  }
-
-  // Method to receive state change updates from backend
-  receiveStateChange(): Observable<any> {
-    return this.webSocket.fromEvent('StateChange');
-  }
-
-  receiveCalibrationData(): Observable<any> {
-    return this.webSocket.fromEvent('Calibration');
-  }
-
-  receiveSteerLimits(): Observable<any> {
-    return this.webSocket.fromEvent('SteeringLimits');
-  }
-
-  receiveNucleoAlive(): Observable<any> {
-    return this.webSocket.fromEvent('AliveSignal');
-  }
-
-  receiveConsoleLog(): Observable<any> {
-    return this.webSocket.fromEvent('console_log');
-  }
-
-  onConnect(): Observable<any> {
-    return this.webSocket.fromEvent('after connect');
-  }
-
-  isConnected(): boolean {
-    return this.webSocket.ioSocket.connected;
-  }
-
-  getConnectionStatus(): 'connected' | 'disconnected' | 'error' {
-    if (this.webSocket.ioSocket.connected) {
-      return 'connected';
-    } else if (this.webSocket.ioSocket.disconnected) {
-      return 'disconnected';
-    } else {
-      return 'error';
-    }
-  }
-
-  reconnect(): void {
-    this.webSocket.ioSocket.connect();
-  }
-
-  isReconnecting(): boolean {
-    return this.webSocket.ioSocket.connecting;
+    this.socket.emit('load', message);
   }
 
   disconnectSocket() {
-    this.webSocket.disconnect();
+    this.socket.disconnect();
   }
 
-  receiveUnhandledEvents(): Observable<{ channel: string, data: any }> {
-    return this.eventSubject.asObservable();
+  reconnect() {
+    this.socket.connect();
+  }
+
+  isConnected(): boolean {
+    return this.socket.connected;
+  }
+
+  /* ========== COMPATIBILITY LAYER ========== */
+
+  receiveSessionAccess() { return this.fromEvent<any>('session_access'); }
+  receiveHeartbeat() { return this.fromEvent<any>('heartbeat'); }
+  receiveHeartbeatDisconnect() { return this.fromEvent<any>('heartbeat_disconnect'); }
+  receiveCurrentSerialConnectionState() { return this.fromEvent<any>('current_serial_connection_state'); }
+  receiveMemoryUsage() { return this.fromEvent<any>('memory_channel'); }
+  receiveCpuUsage() { return this.fromEvent<any>('cpu_channel'); }
+  receiveResourceMonitor() { return this.fromEvent<any>('ResourceMonitor'); }
+  receiveBatteryLevel() { return this.fromEvent<any>('BatteryLvl'); }
+  receiveInstantConsumption() { return this.fromEvent<any>('InstantConsumption'); }
+  receiveEnableButton() { return this.fromEvent<any>('EnableButton'); }
+  receiveCamera() { return this.fromEvent<any>('serialCamera'); }
+  receiveLocation() { return this.fromEvent<any>('Location'); }
+  receiveSemaphores() { return this.fromEvent<any>('Semaphores'); }
+  receiveCurrentSpeed() { return this.fromEvent<any>('CurrentSpeed'); }
+  receiveCurrentSteer() { return this.fromEvent<any>('CurrentSteer'); }
+  receiveSerialConnectionState() { return this.fromEvent<any>('SerialConnectionState'); }
+  receiveWarningSignal() { return this.fromEvent<any>('WarningSignal'); }
+  receiveStateChange() { return this.fromEvent<any>('StateChange'); }
+  receiveSteerLimits() { return this.fromEvent<any>('SteeringLimits'); }
+  receiveCalibrationData() { return this.fromEvent<any>('Calibration'); }
+  receiveConsoleLog() { return this.fromEvent<any>('console_log'); }
+  receiveLoadTable() { return this.fromEvent<any>('loadBack'); }
+
+  receiveUnhandledEvents() {
+    return this.fromEvent<{ channel: string; data: any }>('__any__');
   }
 }
+

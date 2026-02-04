@@ -54,7 +54,7 @@ export class AppComponent implements OnDestroy {
   // >>> md5_hash = hashlib.md5(input.encode()).hexdigest()
   // >>> print(md5_hash)
   // example for "123" -> 202cb962ac59075b964b07152d234b70
-  correctPassword = ''; // md5 hash of the password
+  correctPassword = '202cb962ac59075b964b07152d234b70'; // md5 hash of the password
 
   enteredPassword = ''; // User input password
   isAuthenticated = false; // Controls whether the content is displayed or not

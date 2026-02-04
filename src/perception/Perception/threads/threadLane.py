@@ -48,7 +48,7 @@ class threadLane(ThreadWithStop):
         # 'deliveryMode="lastOnly"' ensures we only process the most recent frame
         self.cameraSubscriber = messageHandlerSubscriber(
             self.queuesList, 
-            mainCameraShrink, 
+            serialCamera, 
             deliveryMode="lastOnly", 
             subscribe=True
         )
