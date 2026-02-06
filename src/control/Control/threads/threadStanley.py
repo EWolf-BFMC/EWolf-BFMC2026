@@ -36,14 +36,14 @@ class threadStanley(ThreadWithStop):
         debugging (bool, optional): A flag for debugging. Defaults to False.
     """
 
-    def __init__(self, queueList, logging, debugging=False):
+    def __init__(self, queueList, logging, debugging=True):
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
         
         # --- Stanley Controller Parameters ---
-        self.k = 0.55             # Convergence gain
-        self.ks = 0.1             # Softening constant (prevents division by zero)
+        self.k = 1.5             # Convergence gain
+        self.ks = 0.5             # Softening constant (prevents division by zero)
         self.max_steer = 25.0     # Max steering limit in degrees for Bosch servo
         
         self.subscribe()
@@ -73,8 +73,7 @@ class threadStanley(ThreadWithStop):
                 # 1. Extract perception data
                 e_y = vision_message.get('e_y', 0)         
                 theta_e = vision_message.get('theta_e', 0) 
-                v = vision_message.get('speed', 0.3)         
-                
+                v = vision_message.get('speed', 0.3)      
                 # 2. STANLEY CONTROL LAW (delta = theta_e + arctan(k*e_y / v + ks))
                 steering_adj = math.atan2(self.k * e_y, v + self.ks)
                 steering_angle_rad = theta_e + steering_adj
@@ -94,11 +93,28 @@ class threadStanley(ThreadWithStop):
                 self.logging.error(f"Error in threadStanley logic: {e}")
 
     def send_commands(self, speed, steer_deg):
-        """Publishes commands to the serial handler using the General Queue[cite: 111, 746]."""
-        # Convert speed to PWM value (0-1000 range typical for Nucleo)
-        # Example: 0.3 speed * 300 = 90 units
-        speed_val = str(int(speed * 300))
-        steer_val = str(float(steer_deg))
-        
-        self.speedSender.send(speed_val) # Sent as ID 1 
-        self.steerSender.send(steer_val) # Sent as ID 2
+        """
+        - Speed: signed int [mm/s] converted to string.
+        - Steer: signed int [deg*10] converted to string.
+        """
+        try:
+            # Documentation says max speed is 500 mm/s
+            #speed_mm_s = int(speed * 1000) 
+            #speed_mm_s = np.clip(speed_mm_s, -500, 500)
+            speed_mm_s = 100
+
+            # Documentation specifies deg*10 for precision.
+            # Max steering angle is 25 degrees
+            steer_decideg = int(round(steer_deg * 10))
+            steer_decideg = np.clip(steer_decideg, -250, 250)
+
+            # Both msgTypes are defined as "str" in allMessages.py.
+            speed_val = str(speed_mm_s)
+            steer_val = str(steer_decideg)
+
+            # 4. DISPATCH
+            self.speedSender.send(speed_val) # ID 1 
+            self.steerSender.send(steer_val) # ID 2 
+
+        except Exception as e:
+            self.logging.error(f"Failed to format or send serial commands: {e}")

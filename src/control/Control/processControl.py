@@ -4,6 +4,9 @@ if __name__ == "__main__":
 
 from src.templates.workerprocess import WorkerProcess
 from src.control.Control.threads.threadStanley import threadStanley
+from src.utils.messages.allMessages import StateChange
+from src.statemachine.systemMode import SystemMode
+from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 
 class processControl(WorkerProcess):
     """This process handles Control.
@@ -17,11 +20,17 @@ class processControl(WorkerProcess):
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
+
+	# Subscribe to StateChange messages to monitor system transitions [cite: 1309]
+        self.stateChangeSubscriber = messageHandlerSubscriber(
+            self.queuesList, StateChange, deliveryMode="lastOnly", subscribe=True
+        )
+
         super(processControl, self).__init__(self.queuesList, ready_event)
 
     def state_change_handler(self):
         pass
-
+	
     def process_work(self):
         pass
 

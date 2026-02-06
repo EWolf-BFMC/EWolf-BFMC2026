@@ -55,14 +55,24 @@ class SystemMode(Enum):
             "process": {
                 "enabled": False,
             }
-        }
+        },
+	"Perception": {
+            "process": {
+                "enabled": False,
+            }
+        },
+        "Control": {
+            "process": {
+                "enabled": False,
+            }
+        },
     }
 
     AUTO = {
         "mode": "auto",
         "camera": {
             "process": {
-                "enabled": False,
+                "enabled": True,
             },
             "thread": {
                 "resolution": "480p",
@@ -82,7 +92,17 @@ class SystemMode(Enum):
             "process": {
                 "enabled": False,
             }
-        }
+        },
+	"Perception": {
+            "process": {
+                "enabled": True,
+            }
+        },
+        "Control": {
+            "process": {
+                "enabled": True,
+            }
+        },
     }
 
     MANUAL = {
@@ -109,7 +129,17 @@ class SystemMode(Enum):
             "process": {
                 "enabled": False,
             }
-        }
+        },
+	"Perception": {
+            "process": {
+                "enabled": False,
+            }
+        },
+        "Control": {
+            "process": {
+                "enabled": False,
+            }
+        },
     }
     
     LEGACY = {
@@ -136,7 +166,17 @@ class SystemMode(Enum):
             "process": {
                 "enabled": True,
             }
-        }
+        },
+	"Perception": {
+            "process": {
+                "enabled": False,
+            }
+        },
+        "Control": {
+            "process": {
+                "enabled": False,
+            }
+        },
     }
 
     STOP = {
@@ -163,5 +203,15 @@ class SystemMode(Enum):
             "process": {
                 "enabled": False,
             }
-        }
+        },
+	"Perception": {
+            "process": {
+                "enabled": False,
+            }
+        },
+        "Control": {
+            "process": {
+                "enabled": False,
+            }
+        },
     }

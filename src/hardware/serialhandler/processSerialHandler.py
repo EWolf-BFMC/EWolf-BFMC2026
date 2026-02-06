@@ -197,20 +197,36 @@ class processSerialHandler(WorkerProcess):
         if serialConnectionStateMessage is False:
             self._handle_serial_disconnection()
 
-    # ================================ STATE CHANGE HANDLER ========================================
+          # ================================ STATE CHANGE HANDLER ========================================
     def state_change_handler(self):
         message = self.stateChangeSubscriber.receive()
         if message is not None:
+            # 1. Obtenemos la configuración del modo
             modeDict = SystemMode[message].value["serial_handler"]["process"]
 
+            # 2. SI EL MENSAJE ES STOP (independientemente del enabled)
+            if message == "STOP":
+                # Limpiamos la cola para borrar el "30" o cualquier velocidad vieja
+                while not self.queuesList["General"].empty():
+                    try: self.queuesList["General"].get_nowait()
+                    except: break
+                
+                # Mandamos el freno real al Nucleo inmediatamente
+                if self.serialConnected and self.serialCon:
+                    with self.serialLock:
+                        self.serialCon.write("#1:0.0;;\r\n".encode())
+                        print("\033[1;91m[ Serial Handler ] : STOP EJECUTADO (0.0)\033[0m")
+                
+                # Opcional: pausar hilos para ahorrar recursos
+                self.pause_threads()
+                return # Salimos para no ejecutar la lógica de abajo
+
+            # 3. Lógica normal para otros estados (AUTO, MANUAL, etc.)
             if modeDict["enabled"] == True:
-                # only resume if serial is connected
                 if self.serialConnected:
                     self.resume_threads()
-
-            elif modeDict["enabled"] == False:
+            else:
                 self.pause_threads()
-
     # ===================================== STOP ==========================================
     def stop(self):
         """Close the history file and stop the process."""

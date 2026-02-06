@@ -84,6 +84,7 @@ class threadLane(ThreadWithStop):
                         "theta_e": heading_error,  # Heading angle error relative to the lane
                         "speed": 0.5 if is_highway else 0.3 # Adaptive speed based on zone detection
                     }
+                    print(control_data)
                     self.controlSender.send(control_data)
                     
             except Exception as e:
