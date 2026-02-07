@@ -7,7 +7,8 @@ Official repository for Team EWolf participating in the Bosch Future Mobility Ch
 * **Focus:** Developing autonomous driving solutions through hardware integration, computer vision, and control theory.
 
 ## Current Project Status
-As of December 2025:
-* **Manual Control:** Successfully implemented manual vehicle control using the Bosch startup code.
-* **Environment:** Setup of the development environment and initial hardware testing.
-* **Next Goal:** Implementing Lane Keeping and basic obstacle reaction for the next sprint.
+As of February 2026:
+* The vehicle can autonomously follow lane boundaries using real-time edge-detection vision algorithms processed on the Raspberry Pi 5. 
+* It maintains lateral guidance through a Stanley Controller, which minimizes cross-track and heading errors during straight paths and moderate curves. 
+* The development stack is mirrored in a ROS/Gazebo environment, allowing for rapid testing of control laws before physical implementation.
+* The system currently encounters instability (oscillations) at higher speeds due to the ongoing syntonisation of controller gains.
