@@ -73,6 +73,7 @@ from src.statemachine.systemMode import SystemMode
 
 from src.perception.Perception.processPerception import processPerception
 from src.control.Control.processControl import processControl
+from src.hardware.Lidar.processLidar import processLidar
 
 # ------ New component imports ends here ------#
 
@@ -172,6 +173,10 @@ allProcesses.insert(0, processPerception)
 Control_ready = Event()
 processControl = processControl(queueList, logging, Control_ready, debugging = False)
 allProcesses.insert(0, processControl)
+
+Lidar_ready = Event()
+processLidar = processLidar(queueList, logging, Lidar_ready, debugging = False)
+allProcesses.insert(0, processLidar)
 
 # ------ New component initialize ends here ------#
 
