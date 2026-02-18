@@ -7,7 +7,8 @@ sudo apt-get upgrade -y
 sudo apt-get install -y \
   python3-pip python3-dev build-essential pkg-config \
   libgl1 libglib2.0-0 libssl-dev libffi-dev \
-  python3-libcamera xdg-utils curl ca-certificates
+  python3-libcamera xdg-utils curl ca-certificates \
+  python3-opencv
 
 # --- Enable global pip installs --------------------------------------------
 sudo pip3 config --global set global.break-system-packages true
@@ -26,11 +27,13 @@ sudo pip3 install -r requirements.txt
 # --- Frontend deps/build ----------------------------------------------------
 pushd src/dashboard/frontend >/dev/null
 
-if [ -f package-lock.json ]; then
-  npm ci
-else
-  npm install
-fi
+#if [ -f package-lock.json ]; then
+#  npm ci
+#else
+#  npm install
+#fi
+rm -rf node_modules package-lock.json 
+npm install ngx-socket-io@3.4.0 socket.io-client@4 --legacy-peer-deps
 
 popd >/dev/null
 
