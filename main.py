@@ -58,10 +58,16 @@ logging.basicConfig(level=logging.INFO)
 
 # ===================================== PROCESS IMPORTS ==================================
 
+IS_SIMULATION = False
+
 from src.gateway.processGateway import processGateway
 from src.dashboard.processDashboard import processDashboard
-from src.hardware.camera.processCamera import processCamera
-from src.hardware.serialhandler.processSerialHandler import processSerialHandler
+if not IS_SIMULATION:
+    from src.hardware.camera.processCamera import processCamera
+    from src.hardware.serialhandler.processSerialHandler import processSerialHandler
+else:
+    processCamera = None
+    processSerialHandler = None
 from src.data.Semaphores.processSemaphores import processSemaphores
 from src.data.TrafficCommunication.processTrafficCommunication import processTrafficCommunication
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
@@ -71,7 +77,8 @@ from src.statemachine.systemMode import SystemMode
 
 # ------ New component imports starts here ------#
 
-from src.perception.Perception.processPerception import processPerception
+if IS_SIMULATION:
+    from src.hardware.simRos.processsimRos import processsimRos
 from src.control.Control.processControl import processControl
 from src.hardware.Lidar.processLidar import processLidar
 
@@ -81,6 +88,7 @@ from src.hardware.Lidar.processLidar import processLidar
 
 def shutdown_process(process, timeout=1):
     """Helper function to gracefully shutdown a process."""
+    if process is None: return
     process.join(timeout)
     if process.is_alive():
         print(f"The process {process} cannot normally stop, it's blocked somewhere! Terminate it!")
@@ -142,11 +150,14 @@ processGateway.start()
 
 # Initializing dashboard
 dashboard_ready = Event()
-processDashboard = processDashboard(queueList, logging, dashboard_ready, debugging = False)
+processDash = processDashboard(queueList, logging, dashboard_ready, debugging = False)
 
 # Initializing camera
-camera_ready = Event()
-processCamera = processCamera(queueList, logging, camera_ready, debugging = False)
+processCam = None
+camera_ready = None
+if not IS_SIMULATION:
+    camera_ready = Event()
+    processCam = processCamera(queueList, logging, camera_ready, debugging = False)
 
 # Initializing semaphores
 semaphore_ready = Event()
@@ -157,26 +168,37 @@ traffic_com_ready = Event()
 processTrafficCom = processTrafficCommunication(queueList, logging, 3, traffic_com_ready, debugging = False)
 
 # Initializing serial connection NUCLEO - > PI
-serial_handler_ready = Event()
-processSerialHandler = processSerialHandler(queueList, logging, serial_handler_ready, dashboard_ready, debugging = False)
+processSerialHand = None
+serial_handler_ready = None
+if not IS_SIMULATION:
+    serial_handler_ready = Event()
+    processSerialHand = processSerialHandler(queueList, logging, serial_handler_ready, dashboard_ready, debugging = False)
 
 # Adding all processes to the list
-allProcesses.extend([processCamera, processSemaphore, processTrafficCom, processSerialHandler, processDashboard])
-allEvents.extend([camera_ready, semaphore_ready, traffic_com_ready, serial_handler_ready, dashboard_ready])
+allProcesses.extend([processSemaphore, processTrafficCom, processDash])
+allEvents.extend([semaphore_ready, traffic_com_ready, dashboard_ready])
+
+if not IS_SIMULATION:
+    allProcesses.extend([processCam, processSerialHand])
+    allEvents.extend([camera_ready, serial_handler_ready])
 
 # ------ New component initialize starts here ------#
 
-Perception_ready = Event()
-processPerception = processPerception(queueList, logging, Perception_ready, debugging = False)
-allProcesses.insert(0, processPerception)
-
 Control_ready = Event()
-processControl = processControl(queueList, logging, Control_ready, debugging = False)
-allProcesses.insert(0, processControl)
+processCont = processControl(queueList, logging, Control_ready, debugging = False)
+allProcesses.insert(0, processCont)
+allEvents.append(Control_ready)
 
 Lidar_ready = Event()
-processLidar = processLidar(queueList, logging, Lidar_ready, debugging = False)
-allProcesses.insert(0, processLidar)
+processLid = processLidar(queueList, logging, Lidar_ready, debugging = False)
+allProcesses.insert(0, processLid)
+allEvents.append(Lidar_ready)
+
+if IS_SIMULATION:
+    simRos_ready = Event()
+    processsimuRos = processsimRos(queueList, logging, simRos_ready, debugging = False)
+    allProcesses.insert(0, processsimuRos)
+    allEvents.append(simRos_ready)
 
 # ------ New component initialize ends here ------#
 
@@ -204,6 +226,12 @@ try:
     while True:
         message = stateChangeSubscriber.receive()
         if message is not None:
+            modeDictLidar = SystemMode[message].value.get("Lidar", {}).get("process", {"enabled": False})
+            modeDictControl = SystemMode[message].value.get("Control", {}).get("process", {"enabled": False})
+
+            processLid = manage_process_life(processLidar, processLid, [queueList, logging, Lidar_ready, False], modeDictLidar["enabled"], allProcesses)
+            processCont = manage_process_life(processControl, processCont, [queueList, logging, Control_ready, False], modeDictControl["enabled"], allProcesses)
+
             modeDictSemaphore = SystemMode[message].value["semaphore"]["process"]
             modeDictTrafficCom = SystemMode[message].value["traffic_com"]["process"]
 

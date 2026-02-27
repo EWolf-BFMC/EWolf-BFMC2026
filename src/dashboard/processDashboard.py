@@ -72,6 +72,7 @@ class processDashboard(WorkerProcess):
         
         # ip replacement
         IpManager.replace_ip_in_file()
+        #COMMENT ONLY IN SIMULATION
 
         # state machine
         self.stateMachine = StateMachine.get_instance()
@@ -338,7 +339,10 @@ class processDashboard(WorkerProcess):
         """Monitor and update hardware metrics periodically."""
         self.cpuCoreUsage = psutil.cpu_percent(interval=None, percpu=False)
         self.memoryUsage = psutil.virtual_memory().percent
-        self.cpuTemperature = round(psutil.sensors_temperatures()['cpu_thermal'][0].current)
+        try:
+            self.cpuTemperature = round(psutil.sensors_temperatures()['cpu_thermal'][0].current)
+        except:
+            self.cpuTemperature = 25
 
         eventlet.spawn_after(1, self.update_hardware_data)
 

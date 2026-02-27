@@ -26,6 +26,21 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
+# ==============================================================================
+# PROCESS DESCRIPTION:
+# THIS PROCESS MANAGES THE CAMERA HARDWARE AND THE ENTIRE VISION PIPELINE.
+# IT INTEGRATES PERCEPTION (LANE) AND OBJECT DETECTION (SIGNS) TO MINIMIZE
+# LATENCY BY SHARING THE RAW CV2 MAT IMAGE VIA SHARED RAM.
+# 
+# THREADS:
+#   - threadCamera: Captures frames and stores them in shared_container['frame'].
+#   - threadLane: Processes the shared frame for Stanley Control (e_y, theta_e).
+#   - threadSigns: Processes the shared frame with YOLO for Traffic Signs.
+#
+# SHARED RESOURCES:
+#   - shared_container: Dictionary {'frame': np_array} for zero-latency transfer.
+# ==============================================================================
+
 if __name__ == "__main__":
     import sys
     sys.path.insert(0, "../../..")
@@ -33,6 +48,8 @@ if __name__ == "__main__":
 from cv2 import meanShift
 from src.templates.workerprocess import WorkerProcess
 from src.hardware.camera.threads.threadCamera import threadCamera
+from src.perception.Perception.threads.threadLane import threadLane
+from src.hardware.camera.threads.threadSigns import threadSigns
 from src.statemachine.stateMachine import StateMachine
 from src.statemachine.systemMode import SystemMode
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
@@ -52,6 +69,8 @@ class processCamera(WorkerProcess):
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
+        # Internal container to share the OpenCV frame between threads without Gateway overhead
+        self.shared_container = {'frame': None}
         self.stateChangeSubscriber = messageHandlerSubscriber(self.queuesList, StateChange, "lastOnly", True)
 
         super(processCamera, self).__init__(self.queuesList, ready_event)
@@ -69,11 +88,23 @@ class processCamera(WorkerProcess):
 
     # ===================================== INIT TH ======================================
     def _init_threads(self):
-        """Create the Camera Publisher thread and add to the list of threads."""
+        # 1. Hardware Thread: Captures the frame and puts it in self.shared_container
         camTh = threadCamera(
-         self.queuesList, self.logging, self.debugging
+            self.queuesList, self.logging, self.debugging, self.shared_container
         )
         self.threads.append(camTh)
+
+        # 2. Perception Thread: Calculates Stanley errors (Lateral/Heading)
+        laneTh = threadLane(
+            self.queuesList, self.logging, self.debugging, self.shared_container
+        )
+        self.threads.append(laneTh)
+
+        # 3. Object Detection Thread: Uses YOLO for signs and obstacles
+        signTh = threadSigns(
+            self.queuesList, self.logging, self.debugging, self.shared_container
+        )
+        self.threads.append(signTh)
 
 
 # =================================== EXAMPLE =========================================

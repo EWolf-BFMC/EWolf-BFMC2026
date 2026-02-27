@@ -56,11 +56,12 @@ class threadCamera(ThreadWithStop):
     """
 
     # ================================ INIT ===============================================
-    def __init__(self, queuesList, logger, debugger):
+    def __init__(self, queuesList, logger, debugger, shared_container): # Added shared_container
         super(threadCamera, self).__init__(pause=0.001)
         self.queuesList = queuesList
         self.logger = logger
         self.debugger = debugger
+        self.shared_container = shared_container # Reference to the process RAM container
         self.frame_rate = 5
         self.recording = False
 
@@ -127,7 +128,11 @@ class threadCamera(ThreadWithStop):
             if self.recording == True:
                 self.video_writer.write(mainRequest) # type: ignore
 
+            # Convert to BGR for OpenCV compatibility
             serialRequest = cv2.cvtColor(serialRequest, cv2.COLOR_YUV2BGR_I420) # type: ignore
+
+            # Store raw BGR frame in shared RAM for threadLane and threadSigns
+            self.shared_container['frame'] = serialRequest
 
             _, mainEncodedImg = cv2.imencode(".jpg", mainRequest) # type: ignore
             _, serialEncodedImg = cv2.imencode(".jpg", serialRequest) # type: ignore

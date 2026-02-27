@@ -3,7 +3,8 @@ if __name__ == "__main__":
     sys.path.insert(0, "../../..")
 
 from src.templates.workerprocess import WorkerProcess
-from src.control.Control.threads.threadStanley import threadStanley
+from src.control.Control.threads.threadControl import threadControl
+from src.control.Control.threads.threadFSM import threadFSM
 from src.utils.messages.allMessages import StateChange
 from src.statemachine.systemMode import SystemMode
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
@@ -21,7 +22,7 @@ class processControl(WorkerProcess):
         self.logging = logging
         self.debugging = debugging
 
-	# Subscribe to StateChange messages to monitor system transitions [cite: 1309]
+	# Subscribe to StateChange messages to monitor system transitions
         self.stateChangeSubscriber = messageHandlerSubscriber(
             self.queuesList, StateChange, deliveryMode="lastOnly", subscribe=True
         )
@@ -36,7 +37,11 @@ class processControl(WorkerProcess):
 
     def _init_threads(self):
         """Create the Control Publisher thread and add to the list of threads."""
-        StanleyTh = threadStanley(
+        ControlTh = threadControl(
             self.queuesList, self.logging, self.debugging
         )
-        self.threads.append(StanleyTh)
+        self.threads.append(ControlTh)
+        FsmTh = threadFSM(
+            self.queuesList, self.logging, self.debugging
+        )
+        self.threads.append(FsmTh)

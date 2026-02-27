@@ -1,14 +1,23 @@
-Flask>=3.1,<3.2
+#python3 -m pip install --upgrade pip
+#This for rasberry
+#Flask>=3.1,<3.2
+#This for pc
+Flask>=3.0,<3.1
 Flask-SocketIO==5.3.6
 Flask-Cors>=4,<5
 psutil>=5.9.4          # system has 7.0.0, that's fine
-picamera2>=0.3.21
+#COMMENT IN PC
+#picamera2>=0.3.21
 eventlet>=0.36.1
 Twisted>=24.7.0
 cryptography>=43,<45
 opencv-python          # if wheel fails, use: sudo apt-get install -y python3-opencv
 pyserial==3.5
-scipy>=1.15,<2
+#This for rasberry
+#scipy>=1.15,<2
+#This for pc
+scipy==1.10.1
 python-socketio==5.10.0
 python-engineio==4.8.0
 service_identity
+pyOpenSSL==24.2.1

@@ -4,11 +4,17 @@ set -euo pipefail
 # --- APT base ---------------------------------------------------------------
 sudo apt-get update
 sudo apt-get upgrade -y
+#This for raspberry
+#sudo apt-get install -y \
+#  python3-pip python3-dev build-essential pkg-config \
+#  libgl1 libglib2.0-0 libssl-dev libffi-dev \
+#  python3-libcamera xdg-utils curl ca-certificates \
+#  python3-opencv
+#This for pc
 sudo apt-get install -y \
   python3-pip python3-dev build-essential pkg-config \
   libgl1 libglib2.0-0 libssl-dev libffi-dev \
-  python3-libcamera xdg-utils curl ca-certificates \
-  python3-opencv
+  xdg-utils curl ca-certificates python3-opencv
 
 # --- Enable global pip installs --------------------------------------------
 sudo pip3 config --global set global.break-system-packages true

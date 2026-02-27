@@ -43,7 +43,12 @@ class SystemMode(Enum):
         },
         "serial_handler": {
             "process": {
-                "enabled": True,
+                "enabled": False,
+            }
+        },
+        "simRos": {
+            "process": {
+                "enabled": False,
             }
         },
         "semaphore": {
@@ -56,7 +61,7 @@ class SystemMode(Enum):
                 "enabled": False,
             }
         },
-	"Perception": {
+	    "Lidar": {
             "process": {
                 "enabled": False,
             }
@@ -80,7 +85,12 @@ class SystemMode(Enum):
         },
         "serial_handler": {
             "process": {
-                "enabled": True,
+                "enabled": False,
+            }
+        },
+        "simRos": {
+            "process": {
+                "enabled": False,
             }
         },
         "semaphore": {
@@ -93,7 +103,7 @@ class SystemMode(Enum):
                 "enabled": False,
             }
         },
-	"Perception": {
+	    "Lidar": {
             "process": {
                 "enabled": True,
             }
@@ -117,7 +127,12 @@ class SystemMode(Enum):
         },
         "serial_handler": {
             "process": {
-                "enabled": True,
+                "enabled": False,
+            }
+        },
+        "simRos": {
+            "process": {
+                "enabled": False,
             }
         },
         "semaphore": {
@@ -130,7 +145,7 @@ class SystemMode(Enum):
                 "enabled": False,
             }
         },
-	"Perception": {
+	    "Lidar": {
             "process": {
                 "enabled": False,
             }
@@ -154,7 +169,12 @@ class SystemMode(Enum):
         },
         "serial_handler": {
             "process": {
-                "enabled": True,
+                "enabled": False,
+            }
+        },
+        "simRos": {
+            "process": {
+                "enabled": False,
             }
         },
         "semaphore": {
@@ -167,9 +187,9 @@ class SystemMode(Enum):
                 "enabled": True,
             }
         },
-	"Perception": {
+	    "Lidar": {
             "process": {
-                "enabled": False,
+                "enabled": True,
             }
         },
         "Control": {
@@ -191,7 +211,12 @@ class SystemMode(Enum):
         },
         "serial_handler": {
             "process": {
-                "enabled": True,
+                "enabled": False,
+            }
+        },
+        "simRos": {
+            "process": {
+                "enabled": False,
             }
         },
         "semaphore": {
@@ -204,7 +229,7 @@ class SystemMode(Enum):
                 "enabled": False,
             }
         },
-	"Perception": {
+	    "Lidar": {
             "process": {
                 "enabled": False,
             }

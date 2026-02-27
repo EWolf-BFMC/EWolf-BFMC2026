@@ -304,8 +304,36 @@ class StateChange(Enum):
 ### It will have this format: {"WarningName":"name1", "WarningID": 1}
 
 ################################# From Perception ##################################
-class StanleyControl(Enum):     #Lane error of the car
+class LaneData(Enum):          # Lane errors 
     Queue = "General" 
     Owner = "threadLane"
     msgID = 1
+    msgType = "dict"           # {"e_y": float, "theta_e": float, "reliability": float}
+
+class SignDetection(Enum):          # Detected sign type and dsitance to the car 
+    Queue = "General"
+    Owner = "threadSigns"
+    msgID = 1
+    msgType = "dict"           # Format: {"type": int, "distance": float}
+
+################################# From Lidar ##################################
+class LidarObstacle(Enum):     # Distance to the closest frontal obstacle
+    Queue = "General" 
+    Owner = "threadDetector"
+    msgID = 1
+    msgType = "dict"    #{"distance": float, "reliability": float}
+
+################################# From FSM ##################################
+class ControlAction(Enum):     #to control the car
+    Queue = "General" 
+    Owner = "threadFSM"
+    msgID = 1
     msgType = "dict"
+
+#   Dictionary {
+#         "behavior": BehaviorState,   # Decided by threadFSM
+#         "e_y": float,                # Cross-track error (meters)
+#         "theta_e": float,            # Heading error (radians)
+#         "speed": float,              # Target speed (m/s)
+#         "timestamp": float           # Safety watchdog timestamp
+#   }
