@@ -104,32 +104,28 @@ class threadControl(ThreadWithStop):
             return
 
         behavior = command_packet.get("behavior", BehaviorState.IDLE)
-        
-        # Executes the behavior decided by threadFSM.
-        
-        # --- EMERGENCY BRAKE ---
+
+        # --- PRIORITY 0: EMERGENCY BRAKE — overrides everything ---
         if behavior == BehaviorState.EMERGENCY_BRAKE:
             self.prev_steering_angle_rad = 0.0  # Prevent recovery jerk
             self.send_commands(0.0, 0.0)
+            return
 
-        # --- ACTIVE DRIVING STATES (Stanley Control) ---
-        elif behavior in (
+        # --- PRIORITY 1: OPEN-LOOP OVERRIDE ---
+        # FSM sets "override_steer" (degrees) for any state that requires
+        # pre-computed steering (intersections, parking phases, full stops).
+        # This bypasses the Stanley controller entirely.
+        if "override_steer" in command_packet:
+            self.execute_open_loop(command_packet)
+            return
+
+        # --- PRIORITY 2: STANLEY CONTROL (active driving states) ---
+        if behavior in (
                 BehaviorState.LANE_FOLLOWING,
                 BehaviorState.HIGHWAY_DRIVING,
                 BehaviorState.ROUNDABOUT,
-                BehaviorState.INTERSECTION,
                 BehaviorState.DECELERATING):
             self.execute_stanley(command_packet)
-
-        # --- PARKING MANEUVER ---
-        elif behavior == BehaviorState.PARKING_MANEUVER:
-            self.execute_parking(command_packet)
-
-        # --- PASSIVE / STOP STATES ---
-        elif behavior in (
-                BehaviorState.STOP_ACTION,
-                BehaviorState.IDLE):
-            self.send_commands(0.0, 0.0)
 
         # --- UNKNOWN STATE SAFETY FALLBACK ---
         else:
@@ -172,12 +168,21 @@ class threadControl(ThreadWithStop):
         except Exception as e:
             self.logging.error(f"Stanley Error: {e}")
 
-    def execute_parking(self, data):
+    def execute_open_loop(self, data):
         """
-        Placeholder for the parking maneuver algorithm.
-        Logic will be implemented here to handle spot detection and reversing.
+        Dispatches FSM-precomputed speed and steering directly to the NUCLEO,
+        bypassing the Stanley controller.
+
+        Used for: intersection open-loop phases, parking sequences, and all
+        full-stop states (IDLE, STOP_ACTION) where override_steer=0.0 is sent.
+        Resets prev_steering_angle_rad whenever speed is zero so the derivative
+        term does not produce a wheel-snap on the next motion command.
         """
-        pass
+        speed = data.get("speed", 0.0)
+        steer_deg = data.get("override_steer", 0.0)
+        if abs(speed) < 0.01:
+            self.prev_steering_angle_rad = 0.0
+        self.send_commands(speed, steer_deg)
 
     # ================================ HARDWARE DISPATCH =================================
 
