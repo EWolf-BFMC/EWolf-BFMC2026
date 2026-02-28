@@ -152,12 +152,6 @@ class threadWrite(ThreadWithStop):
                 self.send_to_serial(command)
                 time.sleep(0.05)
 
-    def convert_fc(self,instantRecv):
-        if instantRecv =="True":
-            return 1
-        else :
-            return 0
-        
     # ===================================== RUN ==========================================
     def thread_work(self):
         """In this function we check if we got the enable engine signal. After we got it we will start getting messages from raspberry PI. It will transform them into NUCLEO commands and send them."""

@@ -76,7 +76,6 @@ class threadSigns(ThreadWithStop):
                 # We use the small frame for the AI
                 detections = self.detect_signs(small_frame)
 
-                ###############################################33
                 
                 if detections:
                     for det in detections:

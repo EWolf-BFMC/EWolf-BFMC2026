@@ -50,7 +50,11 @@ class threadLane(ThreadWithStop):
         self.upper_white = np.array([180, 50, 255])
         
         # --- ENFORCED GEOMETRY ---
-        self.EXPECTED_W, self.EXPECTED_H = 512, 270 
+        self.EXPECTED_W, self.EXPECTED_H = 512, 270
+        # Calibration: BEV dst width (512 px) covers the 35 cm track width.
+        # Adjust TRACK_WIDTH_M if the camera FOV or track dimensions differ.
+        TRACK_WIDTH_M = 0.35
+        self.BEV_PIXELS_PER_METER = self.EXPECTED_W / TRACK_WIDTH_M  # ≈ 1462.9 px/m
         
         src = np.float32([
             [self.EXPECTED_W*0.35, self.EXPECTED_H*0.65], 
@@ -123,7 +127,8 @@ class threadLane(ThreadWithStop):
                 centers.append((x1 + x2) / 2)
                 angles.append(np.arctan2(y2 - y1, x2 - x1))
 
-            self.e_y_buffer.append(np.mean(centers) - (w / 2))
+            e_y_pixels = np.mean(centers) - (w / 2)
+            self.e_y_buffer.append(e_y_pixels / self.BEV_PIXELS_PER_METER)  # convert to metres
             self.theta_e_buffer.append(np.mean(angles) + (np.pi/2))
         
         elif len(self.e_y_buffer) > 0:

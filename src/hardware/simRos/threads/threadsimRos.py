@@ -108,7 +108,7 @@ class threadsimRos(ThreadWithStop):
             speed_val = self.speedSub.receive()
             if speed_val is not None:
                 # Fixed: Use 'speed' key and scaling as per RcBrainThread example
-                speed_final = float(speed_val) / 100.0
+                speed_final = float(speed_val) / 1000.0
                 self.ros_publisher.publish(json.dumps({"action": "1", "speed": speed_final}))
             
              # Check for new steering commands from the Brain

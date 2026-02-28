@@ -42,7 +42,7 @@ class threadControl(ThreadWithStop):
     into low-level serial commands for the NUCLEO board.
     """
 
-    def __init__(self, queueList, logging, debugging=True):
+    def __init__(self, queueList, logging, debugging=False):
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
@@ -158,9 +158,9 @@ class threadControl(ThreadWithStop):
             steering_adj = math.atan2(self.k * e_y, v + self.ks)
             desired_rad = theta_e + steering_adj
             
-            # Approximate Derivative Damping
+            # Approximate Derivative Damping (subtracts rate-of-change to resist fast swings)
             diff = desired_rad - self.prev_steering_angle_rad
-            final_rad = desired_rad + (self.kd * diff)
+            final_rad = desired_rad - (self.kd * diff)
             self.prev_steering_angle_rad = final_rad    #Update memory for next frame
             
             # Internal Math Clamp
