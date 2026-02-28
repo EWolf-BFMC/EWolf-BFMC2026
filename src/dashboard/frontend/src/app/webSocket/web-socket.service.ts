@@ -118,6 +118,7 @@ export class WebSocketService {
   receiveCalibrationData() { return this.fromEvent<any>('Calibration'); }
   receiveConsoleLog() { return this.fromEvent<any>('console_log'); }
   receiveLoadTable() { return this.fromEvent<any>('loadBack'); }
+  receiveFsmStatus() { return this.fromEvent<any>('FsmStatus'); }
 
   receiveUnhandledEvents() {
     return this.fromEvent<{ channel: string; data: any }>('__any__');

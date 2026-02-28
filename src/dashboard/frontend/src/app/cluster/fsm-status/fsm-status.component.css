@@ -1,0 +1,65 @@
+.fsm-status {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  gap: 8%;
+  padding: 4% 5%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.04);
+  border: 0.1vw solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.fsm-status-title {
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.fsm-status-title-text {
+  color: white;
+  font-size: 0.75vw;
+  opacity: 0.55;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin: 0;
+}
+
+.fsm-status-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12%;
+  width: 100%;
+  flex: 1;
+  justify-content: center;
+}
+
+.fsm-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.fsm-status-label {
+  color: white;
+  font-size: 0.65vw;
+  opacity: 0.6;
+  min-width: 30%;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fsm-status-badge {
+  font-size: 0.65vw;
+  font-weight: bold;
+  padding: 3% 8%;
+  border-radius: 3px;
+  color: white;
+  text-align: center;
+  min-width: 65%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

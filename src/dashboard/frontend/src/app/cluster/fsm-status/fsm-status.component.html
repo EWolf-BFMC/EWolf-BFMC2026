@@ -1,0 +1,19 @@
+<div class="fsm-status">
+  <div class="fsm-status-title">
+    <p class="fsm-status-title-text">FSM Status</p>
+  </div>
+  <div class="fsm-status-rows">
+    <div class="fsm-status-row">
+      <span class="fsm-status-label">STATE</span>
+      <span class="fsm-status-badge" [style.background-color]="getStateColor()">{{ fsmState }}</span>
+    </div>
+    <div class="fsm-status-row">
+      <span class="fsm-status-label">SIGN</span>
+      <span class="fsm-status-badge" [style.background-color]="getSignColor()">{{ sign }}</span>
+    </div>
+    <div class="fsm-status-row">
+      <span class="fsm-status-label">OBSTACLE</span>
+      <span class="fsm-status-badge" [style.background-color]="getZoneColor()">{{ obstacleZone }}</span>
+    </div>
+  </div>
+</div>

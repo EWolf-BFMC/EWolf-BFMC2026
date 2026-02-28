@@ -192,12 +192,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     z-index: 5;
 }
 
-.cluster-side-marker { 
+.cluster-side-marker {
     position: absolute;
     top: 50.6%;
     left: 39%;
     width: 22%;
     height: 5%;
+}
+
+.cluster-fsm-status {
+    position: absolute;
+    top: 3%;
+    left: 81%;
+    width: 18%;
+    height: 26%;
 }
 
 @keyframes pulseRedShadow {
