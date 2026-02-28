@@ -3,7 +3,7 @@ from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.control.Control.threads.allStates import BehaviorState, SignType, ObstacleZone, SpeedLimit
 from src.utils.messages.allMessages import (
-    ControlAction, LaneData, LidarObstacle, SignDetection
+    ControlAction, FsmStatus, LaneData, LidarObstacle, SignDetection
 )
 import time
 
@@ -17,11 +17,11 @@ import time
 #
 # LEFT TURN  (-25° max steer):
 #   R_center = 480 + 80 = 560 mm
-#   Arc (90°) = 560 × π/2 ≈ 879 mm  →  duration = 879 / 150 ≈ 5.9 s → 6.0 s
+#   Arc (90) = 560 × π/2 ≈ 879 mm  →  duration = 879 / 150 ≈ 5.9 s → 6.0 s
 #
 # RIGHT TURN (+25° max steer):
 #   Symmetric estimate with slightly shorter duration → 5.5 s
-#   NOTE: physical fit within 350 mm lane must be verified on the track.
+#   NOTA: physical fit within 350 mm lane must be verified on the track.
 #
 # STRAIGHT:
 #   1.2 s at 150 mm/s clears the conflict zone (≈ 180 mm clearance).
@@ -102,6 +102,8 @@ class threadFSM(ThreadWithStop):
 
         # Action Sender (The output of the FSM)
         self.controlSender = messageHandlerSender(self.queuesList, ControlAction)
+        self.fsmStatusSender = messageHandlerSender(self.queuesList, FsmStatus)
+        self._last_status = None
 
         super(threadFSM, self).__init__(pause=0.01)  # 100 Hz Decision Loop
 
@@ -241,7 +243,7 @@ class threadFSM(ThreadWithStop):
                     self.current_state = BehaviorState.LANE_FOLLOWING
                 self.stop_reason = None
 
-        # INTERSECTION / PARKING: reliability handshake guards the exit.
+        # INTERSECTION / PARKING
         # The FSM refuses to leave these states until the open-loop maneuver
         # is fully complete AND threadLane reports stable lane lines (≥ 0.8).
         elif self.current_state in (BehaviorState.INTERSECTION,
@@ -342,7 +344,7 @@ class threadFSM(ThreadWithStop):
         """
         Hard halt: zero velocity, centered steering, every cycle.
 
-        The 3-second regulatory timer is managed by update_state().
+        The 3-second timer is managed by update_state().
         Sending override_steer=0.0 ensures threadControl resets its
         derivative memory so the wheels do not snap on resumption.
         """
@@ -386,7 +388,7 @@ class threadFSM(ThreadWithStop):
 
     def _action_decelerating(self):
         """
-        Visible deceleration buffer (10 cm/s) before a stop or maneuver.
+        Deceleration buffer (10 cm/s) before a sign, obstacle or maneuver.
         Full Stanley lane tracking is maintained so the car stays centred
         as it slows — avoids arriving at a crosswalk crabbed to one side.
         """
@@ -484,10 +486,10 @@ class threadFSM(ThreadWithStop):
         --------------
         0  Approach and align      1.5 s   fwd  0.10 m/s   steer  0°
         1  Clear spot entry        1.0 s   fwd  0.10 m/s   steer +20°
-        2  Reverse into spot       2.0 s   rev −0.10 m/s   steer +25°
-        3  Straighten in spot      0.5 s   rev −0.08 m/s   steer −15°
+        2  Reverse into spot       2.0 s   rev -0.10 m/s   steer +25°
+        3  Straighten in spot      0.5 s   rev -0.08 m/s   steer -15°
         4  Wait in spot            3.0 s   0    m/s         steer  0°
-        5  Exit forward            2.0 s   fwd  0.10 m/s   steer −25°
+        5  Exit forward            2.0 s   fwd  0.10 m/s   steer -25°
         6  Return to lane          0.8 s   fwd  0.10 m/s   steer +10°
         7  Slow creep              50 mm/s, steer 0° while awaiting reliability
 
@@ -534,6 +536,19 @@ class threadFSM(ThreadWithStop):
     # MAIN LOOP
     # =========================================================================
 
+    def _publish_status(self):
+        """Publishes FSM telemetry to the dashboard. Only emits on change."""
+        zone = self.evaluate_obstacle_zone()
+        sign_type = self.active_sign.get("type")
+        status = {
+            "state": self.current_state.name,
+            "sign": sign_type.name if sign_type is not None else "NONE",
+            "obstacle_zone": zone.name,
+        }
+        if status != self._last_status:
+            self._last_status = status
+            self.fsmStatusSender.send(status)
+
     def thread_work(self):
         """
         Main Behavioral Loop:
@@ -542,3 +557,4 @@ class threadFSM(ThreadWithStop):
         self.update_inputs()
         self.update_state()
         self.execute_behavior()
+        self._publish_status()

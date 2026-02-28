@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 EWolf-BFMC2026 is the autonomous driving stack for Team EWolf competing in the Bosch Future Mobility Challenge (BFMC) 2026. The system runs on a Raspberry Pi 5 controlling a 1/10 scale vehicle. It can also run in simulation via ROS/Gazebo.
+Style: PEP8 for Python, Google for C++.
 
 ## Commands
 

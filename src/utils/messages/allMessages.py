@@ -325,10 +325,16 @@ class LidarObstacle(Enum):     # Distance to the closest frontal obstacle
 
 ################################# From FSM ##################################
 class ControlAction(Enum):     #to control the car
-    Queue = "General" 
+    Queue = "General"
     Owner = "threadFSM"
     msgID = 1
     msgType = "dict"
+
+class FsmStatus(Enum):          # FSM telemetry for dashboard display
+    Queue = "General"
+    Owner = "threadFSM"
+    msgID = 2
+    msgType = "dict"            # {"state": str, "sign": str, "obstacle_zone": str}
 
 #   Dictionary {
 #         "behavior": BehaviorState,   # Decided by threadFSM

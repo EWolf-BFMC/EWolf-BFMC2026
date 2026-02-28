@@ -21,3 +21,4 @@ python-socketio==5.10.0
 python-engineio==4.8.0
 service_identity
 pyOpenSSL==24.2.1
+rplidar

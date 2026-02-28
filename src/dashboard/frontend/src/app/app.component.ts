@@ -133,8 +133,11 @@ export class AppComponent implements OnDestroy {
 
     this.connectionStatusSubscription = this.webSocketService.connectionStatus$.subscribe(status => {
       if (status === 'disconnected' || status === 'error') {
+        if (this.backendConnected) {
+          // Only log out if we were previously connected (avoids offline preview disruption)
+          this.isAuthenticated = false;
+        }
         this.backendConnected = false;
-        this.isAuthenticated = false;
         this.startAutoReconnect();
 
       } else if (status === 'connected') {
@@ -151,14 +154,22 @@ export class AppComponent implements OnDestroy {
   submitPassword() {
     if (this.correctPassword === '' && this.enteredPassword === this.correctPassword) {
       this.showAlert = true;
-      this.webSocketService.sendMessageToFlask(`{"Name": "SessionAccess"}`);
+      if (this.backendConnected) {
+        this.webSocketService.sendMessageToFlask(`{"Name": "SessionAccess"}`);
+      } else {
+        this.isAuthenticated = true;
+      }
       return;
     }
 
     const enteredPasswordHash = CryptoJS.MD5(this.enteredPassword).toString();
     if (enteredPasswordHash === this.correctPassword) {
       this.showAlert = false;
-      this.webSocketService.sendMessageToFlask(`{"Name": "SessionAccess"}`);
+      if (this.backendConnected) {
+        this.webSocketService.sendMessageToFlask(`{"Name": "SessionAccess"}`);
+      } else {
+        this.isAuthenticated = true;
+      }
     }
   }
 

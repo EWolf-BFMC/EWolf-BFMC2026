@@ -44,17 +44,19 @@ import { HardwareDataComponent} from './hardware-data/hardware-data.component';
 import { RecordComponent} from './record/record.component';
 import { TimeSpeedSteerComponent} from './time-speed-steer/time-speed-steer.component'
 import { SideMarkerComponent } from './side-marker/side-marker.component'
+import { FsmStatusComponent } from './fsm-status/fsm-status.component';
 import { CommonModule } from '@angular/common';
 import { ClusterService } from './cluster.service';
 import { provideProtractorTestingSupport } from '@angular/platform-browser';
 @Component({
   selector: 'app-cluster',
   standalone: true,
-  imports: [SpeedometerComponent, BatteryLevelComponent, MapComponent, 
+  imports: [SpeedometerComponent, BatteryLevelComponent, MapComponent,
             CarComponent, InstantConsumptionComponent, StateSwitchComponent,
             KlSwitchComponent, SteeringComponent, LiveCameraComponent,
             WarningLightComponent, HardwareDataComponent, RecordComponent,
-            TimeSpeedSteerComponent, SideMarkerComponent, CommonModule],
+            TimeSpeedSteerComponent, SideMarkerComponent, FsmStatusComponent,
+            CommonModule],
   templateUrl: './cluster.component.html',
   styleUrl: './cluster.component.css'
 })
