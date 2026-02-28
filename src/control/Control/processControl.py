@@ -22,7 +22,7 @@ class processControl(WorkerProcess):
         self.logging = logging
         self.debugging = debugging
 
-	# Subscribe to StateChange messages to monitor system transitions
+        # Subscribe to StateChange messages to monitor system transitions
         self.stateChangeSubscriber = messageHandlerSubscriber(
             self.queuesList, StateChange, deliveryMode="lastOnly", subscribe=True
         )
@@ -30,8 +30,15 @@ class processControl(WorkerProcess):
         super(processControl, self).__init__(self.queuesList, ready_event)
 
     def state_change_handler(self):
-        pass
-	
+        message = self.stateChangeSubscriber.receive()
+        if message is not None:
+            modeDict = SystemMode[message].value["Control"]["process"]
+            if modeDict["enabled"] == True:
+                self.resume_threads()
+            elif modeDict["enabled"] == False:
+                self.pause_threads()
+
+
     def process_work(self):
         pass
 

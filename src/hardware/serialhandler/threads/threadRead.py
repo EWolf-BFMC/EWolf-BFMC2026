@@ -172,12 +172,12 @@ class threadRead(ThreadWithStop):
 
             elif action == "speed":
                 speed = value.split(",")[0]
-                if (lambda v: (lambda: float(v), True)[1] if isinstance(v, str) else False)(speed):
+                if self.is_float(speed):
                     self.currentSpeedSender.send(float(speed))
 
             elif action == "steer":
                 steer = value.split(",")[0]
-                if (lambda v: (lambda: float(v), True)[1] if isinstance(v, str) else False)(steer):
+                if self.is_float(steer):
                     self.currentSteerSender.send(float(steer))
 
             elif action == "vcdCalib":
@@ -221,7 +221,7 @@ class threadRead(ThreadWithStop):
                 data = re.match(self.warningPattern, value)
                 if data:
                     print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - Shutdown in \033[94m{data.group(1)}h {data.group(2)}m {data.group(3)}s\033[0m")
-                    self.warningSender.send(data)
+                    self.warningSender.send(value)  # send the raw string, not the re.Match object
                     
             elif action == "shutdown":
                 print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - \033[94mShutting down now!\033[0m")

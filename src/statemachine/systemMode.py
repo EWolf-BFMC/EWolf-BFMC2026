@@ -85,7 +85,7 @@ class SystemMode(Enum):
         },
         "serial_handler": {
             "process": {
-                "enabled": False,
+                "enabled": True,
             }
         },
         "simRos": {
@@ -127,7 +127,7 @@ class SystemMode(Enum):
         },
         "serial_handler": {
             "process": {
-                "enabled": False,
+                "enabled": True,
             }
         },
         "simRos": {
@@ -169,7 +169,7 @@ class SystemMode(Enum):
         },
         "serial_handler": {
             "process": {
-                "enabled": False,
+                "enabled": True,
             }
         },
         "simRos": {

@@ -23,7 +23,7 @@
 # DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWITrueSE) ARISING IN ANY WAY OUT OF THE USE
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 from src.templates.threadwithstop import ThreadWithStop
@@ -102,13 +102,23 @@ class threadGateway(ThreadWithStop):
         Type = message["msgType"]
         Value = message["msgValue"]
         if (Owner, Id) in self.messageApproved:
+            broken = []
             for element in self.sendingList[Owner][Id]:
-                # We send a dictionary that contain the type of the message and message
-                self.sendingList[Owner][Id][element].send(
-                    {"Type": Type, "value": Value, "id": Id, "Owner": Owner}
-                )
-                if self.debugging:
-                    self.logger.warning(message)
+                try:
+                    # We send a dictionary that contain the type of the message and message
+                    self.sendingList[Owner][Id][element].send(
+                        {"Type": Type, "value": Value, "id": Id, "Owner": Owner}
+                    )
+                    if self.debugging:
+                        self.logger.warning(message)
+                except (BrokenPipeError, OSError):
+                    broken.append(element)
+            for element in broken:
+                del self.sendingList[Owner][Id][element]
+                try:
+                    self.messageApproved.remove((Owner, Id))
+                except ValueError:
+                    pass
 
     # ====================================================================================
 

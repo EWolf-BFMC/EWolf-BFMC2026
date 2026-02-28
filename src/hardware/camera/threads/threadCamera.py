@@ -65,7 +65,7 @@ class threadCamera(ThreadWithStop):
         self.frame_rate = 5
         self.recording = False
 
-        self.video_writer = ""
+        self.video_writer = None
 
         self.recordingSender = messageHandlerSender(self.queuesList, Recording)
         self.mainCameraSender = messageHandlerSender(self.queuesList, mainCamera)
@@ -106,7 +106,9 @@ class threadCamera(ThreadWithStop):
             if recordRecv is not None: 
                 self.recording = bool(recordRecv)
                 if recordRecv == False:
-                    self.video_writer.release() # type: ignore
+                    if self.video_writer is not None:
+                        self.video_writer.release() # type: ignore
+                        self.video_writer = None
                 else:
                     fourcc = cv2.VideoWriter_fourcc( # type: ignore
                         *"XVID"

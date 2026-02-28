@@ -48,7 +48,7 @@ class threadReader(ThreadWithStop):
         # Clear buffer at startup to ensure a clean stream start.
         try:
             self.lidar.clear_input()
-        except:
+        except Exception:
             self.logging.warning("[LiDAR Reader] Could not clear input at startup.")
         
         # We use a very low pause to keep the serial buffer empty
@@ -68,7 +68,7 @@ class threadReader(ThreadWithStop):
         try:
             # iter_scans yields a full 360-degree scan roughly every 100ms (10Hz)
             for scan in self.lidar.iter_scans(max_buf_meas=500):
-                if self.stopped():
+                if self._blocker.is_set():
                     break
                 
                 # DATA PACKAGING: Include a timestamp so the Detector knows if the data is stale.
@@ -92,6 +92,6 @@ class threadReader(ThreadWithStop):
             self.lidar.stop()
             self.lidar.stop_motor()
             self.lidar.disconnect()
-        except:
+        except Exception:
             pass
         super(threadReader, self).stop()

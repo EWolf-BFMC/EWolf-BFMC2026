@@ -128,7 +128,7 @@ queueList = {
     "Config": Queue(),
     "Log": Queue(),
 }
-logging = logging.getLogger()
+logger = logging.getLogger()
 
 original_stdout = sys.stdout
 original_stderr = sys.stderr
@@ -143,36 +143,36 @@ stateChangeSubscriber = messageHandlerSubscriber(queueList, StateChange, "lastOn
 StateMachine.initialize_shared_state(queueList)
 
 # Initializing gateway
-processGateway = processGateway(queueList, logging)
-processGateway.start()
+processGate = processGateway(queueList, logger)
+processGate.start()
 
 # ===================================== INITIALIZE PROCESSES ==================================
 
 # Initializing dashboard
 dashboard_ready = Event()
-processDash = processDashboard(queueList, logging, dashboard_ready, debugging = False)
+processDash = processDashboard(queueList, logger, dashboard_ready, debugging = False)
 
 # Initializing camera
 processCam = None
 camera_ready = None
 if not IS_SIMULATION:
     camera_ready = Event()
-    processCam = processCamera(queueList, logging, camera_ready, debugging = False)
+    processCam = processCamera(queueList, logger, camera_ready, debugging = False)
 
 # Initializing semaphores
 semaphore_ready = Event()
-processSemaphore = processSemaphores(queueList, logging, semaphore_ready, debugging = False)
+processSemaphore = processSemaphores(queueList, logger, semaphore_ready, debugging = False)
 
 # Initializing GPS
 traffic_com_ready = Event()
-processTrafficCom = processTrafficCommunication(queueList, logging, 3, traffic_com_ready, debugging = False)
+processTrafficCom = processTrafficCommunication(queueList, logger, 3, traffic_com_ready, debugging = False)
 
 # Initializing serial connection NUCLEO - > PI
 processSerialHand = None
 serial_handler_ready = None
 if not IS_SIMULATION:
     serial_handler_ready = Event()
-    processSerialHand = processSerialHandler(queueList, logging, serial_handler_ready, dashboard_ready, debugging = False)
+    processSerialHand = processSerialHandler(queueList, logger, serial_handler_ready, dashboard_ready, debugging = False)
 
 # Adding all processes to the list
 allProcesses.extend([processSemaphore, processTrafficCom, processDash])
@@ -184,19 +184,18 @@ if not IS_SIMULATION:
 
 # ------ New component initialize starts here ------#
 
+# Control and Lidar are disabled in DEFAULT mode.
+# manage_process_life() in the main loop starts them only when a mode
+# that enables them (e.g. AUTO) is activated via a StateChange message.
 Control_ready = Event()
-processCont = processControl(queueList, logging, Control_ready, debugging = False)
-allProcesses.insert(0, processCont)
-allEvents.append(Control_ready)
+processCont = None
 
 Lidar_ready = Event()
-processLid = processLidar(queueList, logging, Lidar_ready, debugging = False)
-allProcesses.insert(0, processLid)
-allEvents.append(Lidar_ready)
+processLid = None
 
 if IS_SIMULATION:
     simRos_ready = Event()
-    processsimuRos = processsimRos(queueList, logging, simRos_ready, debugging = False)
+    processsimuRos = processsimRos(queueList, logger, simRos_ready, debugging = False)
     allProcesses.insert(0, processsimuRos)
     allEvents.append(simRos_ready)
 
@@ -229,14 +228,14 @@ try:
             modeDictLidar = SystemMode[message].value.get("Lidar", {}).get("process", {"enabled": False})
             modeDictControl = SystemMode[message].value.get("Control", {}).get("process", {"enabled": False})
 
-            processLid = manage_process_life(processLidar, processLid, [queueList, logging, Lidar_ready, False], modeDictLidar["enabled"], allProcesses)
-            processCont = manage_process_life(processControl, processCont, [queueList, logging, Control_ready, False], modeDictControl["enabled"], allProcesses)
+            processLid = manage_process_life(processLidar, processLid, [queueList, logger, Lidar_ready, False], modeDictLidar["enabled"], allProcesses)
+            processCont = manage_process_life(processControl, processCont, [queueList, logger, Control_ready, False], modeDictControl["enabled"], allProcesses)
 
             modeDictSemaphore = SystemMode[message].value["semaphore"]["process"]
             modeDictTrafficCom = SystemMode[message].value["traffic_com"]["process"]
 
-            processSemaphore = manage_process_life(processSemaphores, processSemaphore, [queueList, logging, semaphore_ready, False], modeDictSemaphore["enabled"], allProcesses)
-            processTrafficCom = manage_process_life(processTrafficCommunication, processTrafficCom, [queueList, logging, 3, traffic_com_ready, False], modeDictTrafficCom["enabled"], allProcesses)
+            processSemaphore = manage_process_life(processSemaphores, processSemaphore, [queueList, logger, semaphore_ready, False], modeDictSemaphore["enabled"], allProcesses)
+            processTrafficCom = manage_process_life(processTrafficCommunication, processTrafficCom, [queueList, logger, 3, traffic_com_ready, False], modeDictTrafficCom["enabled"], allProcesses)
 
         blocker.wait(0.1)
 
@@ -245,9 +244,9 @@ except KeyboardInterrupt:
 
     for proc in reversed(allProcesses):
         proc.stop()
-    processGateway.stop()
+    processGate.stop()
 
     # wait for all processes to finish before exiting
     for proc in reversed(allProcesses):
         shutdown_process(proc)
-    shutdown_process(processGateway)
+    shutdown_process(processGate)

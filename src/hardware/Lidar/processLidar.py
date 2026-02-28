@@ -77,11 +77,5 @@ class processLidar(WorkerProcess):
         self.threads.append(DetectorTh)
 
     def stop(self):
-        """Graceful shutdown of the Lidar motor and serial connection."""
-        if self.lidar_obj:
-            try:
-                self.lidar_obj.stop_motor()
-                self.lidar_obj.disconnect()
-            except:
-                pass
+        """Graceful shutdown: stop threads first so threadReader.stop() handles hardware teardown."""
         super(processLidar, self).stop()

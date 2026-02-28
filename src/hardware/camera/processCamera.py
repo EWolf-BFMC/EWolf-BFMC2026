@@ -45,10 +45,9 @@ if __name__ == "__main__":
     import sys
     sys.path.insert(0, "../../..")
 
-from cv2 import meanShift
 from src.templates.workerprocess import WorkerProcess
 from src.hardware.camera.threads.threadCamera import threadCamera
-from src.perception.Perception.threads.threadLane import threadLane
+from src.hardware.camera.threads.threadLane import threadLane
 from src.hardware.camera.threads.threadSigns import threadSigns
 from src.statemachine.stateMachine import StateMachine
 from src.statemachine.systemMode import SystemMode
@@ -127,6 +126,7 @@ if __name__ == "__main__":
         "Warning": Queue(),
         "General": Queue(),
         "Config": Queue(),
+        "Log": Queue(),
     }
 
     logger = logging.getLogger()

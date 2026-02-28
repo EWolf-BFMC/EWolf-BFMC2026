@@ -3,7 +3,7 @@ from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.control.Control.threads.allStates import BehaviorState, SignType, ObstacleZone, SpeedLimit
 from src.utils.messages.allMessages import (
-    ControlAction, LaneData, LidarObstacle, SignDetection, Location
+    ControlAction, LaneData, LidarObstacle, SignDetection
 )
 import time
 
@@ -20,13 +20,13 @@ class threadFSM(ThreadWithStop):
         
         # --- STATE REGISTRY ---
         self.current_state = BehaviorState.IDLE
-        
+        self.previous_state = BehaviorState.IDLE
+
         # --- INPUT MEMORY ---
         self.lane_info = {"e_y": 0.0, "theta_e": 0.0, "reliability": 0.0}
         self.obstacle_info = {"distance": 2000.0, "reliability": 0.0}
         self.active_sign = {"type": None, "distance": 2000.0}
         self.current_target_speed = SpeedLimit.CITY_MIN.value
-        self.current_state = BehaviorState.IDLE
         self.stop_timer_start = None
         self.stop_reason = None # Reason for stop "SIGN" or "PEDESTRIAN"
         
@@ -83,11 +83,22 @@ class threadFSM(ThreadWithStop):
         # --- Signs ---
         sign_data = self.signSub.receive()
         if sign_data:
-            self.active_sign['type'] = sign_data.get('type', None)
+            raw_type = sign_data.get('type', None)
+            if isinstance(raw_type, SignType):
+                self.active_sign['type'] = raw_type
+            elif raw_type is not None:
+                try:
+                    self.active_sign['type'] = SignType(raw_type)
+                except ValueError:
+                    self.active_sign['type'] = None
+            else:
+                self.active_sign['type'] = None
             self.active_sign['distance'] = sign_data.get('distance', 2000.0)
+        else:
+            self.active_sign = {"type": None, "distance": 2000.0}
 
     def update_state(self):
-        """Thinking Phase: Transition logic following FSM.pdf."""
+        """Thinking Phase: Transition logic following FSM"""
         zone = self.evaluate_obstacle_zone()
         sign = self.active_sign['type']
         s_dist = self.active_sign['distance']
