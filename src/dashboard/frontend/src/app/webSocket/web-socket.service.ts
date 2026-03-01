@@ -39,10 +39,10 @@ export class WebSocketService {
 
   connectionStatus$ = this.connectionStatusSubject.asObservable();
 
-  /* http://ewolf.local:500 for pi */
+  /* http://ewolf.local:5005 for pi */
   /* http://localhost:5005 for simR */
   constructor() {
-    this.socket = io('http://ewolf.local:500', {
+    this.socket = io('http://ewolf.local:5005', {
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
