@@ -369,6 +369,16 @@ class processDashboard(WorkerProcess):
             eventlet.spawn_after(self.heartbeat_time_between_heartbeats, self.send_heartbeat)
 
 
+    def _make_json_safe(self, obj):
+        """Recursively convert Enum values to their names for JSON serialization."""
+        if isinstance(obj, Enum):
+            return obj.name
+        if isinstance(obj, dict):
+            return {k: self._make_json_safe(v) for k, v in obj.items()}
+        if isinstance(obj, (list, tuple)):
+            return [self._make_json_safe(i) for i in obj]
+        return obj
+
     def send_continuous_messages(self):
         """Process and send subscriber messages to the frontend."""
         if not self.running:
@@ -380,7 +390,7 @@ class processDashboard(WorkerProcess):
                 if msg == "SerialConnectionState":
                     self.serialConnected = resp
 
-                self.socketio.emit(msg, {"value": resp})
+                self.socketio.emit(msg, {"value": self._make_json_safe(resp)})
                 if self.debugging:
                     self.logger.info(f"{msg}: {resp}")
 
