@@ -39,6 +39,8 @@ _RIGHT_TURN_DUR     =  5.5
 _STRAIGHT_STEER_DEG =  0.0
 _STRAIGHT_TURN_DUR  =  1.2
 
+_DECEL_RAMP_DURATION = 2.0   # DECELERATION RAMP CONSTANT
+
 # =============================================================================
 # PARKING MANEUVER CONSTANTS
 #
@@ -94,6 +96,8 @@ class threadFSM(ThreadWithStop):
 
         self._parking_phase = 0
         self._parking_phase_timer = None
+
+        self._decel_start_time = None
 
         # Tracks previous state in execute_behavior() to detect fresh entries
         self._prev_executed_state = None
@@ -301,7 +305,7 @@ class threadFSM(ThreadWithStop):
         elif state == BehaviorState.HIGHWAY_DRIVING:
             self._action_highway_driving()
         elif state == BehaviorState.DECELERATING:
-            self._action_decelerating()
+            self._action_decelerating(fresh_entry)
         elif state == BehaviorState.INTERSECTION:
             self._action_intersection(fresh_entry)
         elif state == BehaviorState.PARKING_MANEUVER:
@@ -333,6 +337,7 @@ class threadFSM(ThreadWithStop):
             self._intersection_phase_timer = None
             self._parking_phase = 0
             self._parking_phase_timer = None
+            self._decel_start_time = None
             self.maneuver_complete = False
             if self.debugging:
                 self.logging.info("[FSM] IDLE — full memory reset, steering centred.")
@@ -386,15 +391,23 @@ class threadFSM(ThreadWithStop):
             theta_e=self.lane_info['theta_e'],
         )
 
-    def _action_decelerating(self):
+    def _action_decelerating(self, fresh_entry):
         """
-        Deceleration buffer (10 cm/s) before a sign, obstacle or maneuver.
-        Full Stanley lane tracking is maintained so the car stays centred
-        as it slows — avoids arriving at a crosswalk crabbed to one side.
+        Linear ramp over
+        _DECEL_RAMP_DURATION seconds. Stanley tracking is maintained.
         """
+        if fresh_entry:
+            self._decel_start_time = time.perf_counter()
+
+        elapsed = time.perf_counter() - self._decel_start_time
+        t = min(elapsed / _DECEL_RAMP_DURATION, 1.0)
+        start  = SpeedLimit.CITY_MIN.value          # 0.20 m/s
+        target = SpeedLimit.CITY_MIN.value * 0.5    # 0.10 m/s
+        speed  = start + t * (target - start)
+
         self._send_command(
             BehaviorState.DECELERATING,
-            SpeedLimit.CITY_MIN.value * 0.5,    # 0.10 m/s
+            speed,
             e_y=self.lane_info['e_y'],
             theta_e=self.lane_info['theta_e'],
         )

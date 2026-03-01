@@ -330,12 +330,6 @@ class ControlAction(Enum):     #to control the car
     msgID = 1
     msgType = "dict"
 
-class FsmStatus(Enum):          # FSM telemetry for dashboard display
-    Queue = "General"
-    Owner = "threadFSM"
-    msgID = 2
-    msgType = "dict"            # {"state": str, "sign": str, "obstacle_zone": str}
-
 #   Dictionary {
 #         "behavior": BehaviorState,   # Decided by threadFSM
 #         "e_y": float,                # Cross-track error (meters)
@@ -343,3 +337,9 @@ class FsmStatus(Enum):          # FSM telemetry for dashboard display
 #         "speed": float,              # Target speed (m/s)
 #         "timestamp": float           # Safety watchdog timestamp
 #   }
+
+class FsmStatus(Enum):          # FSM telemetry for dashboard display
+    Queue = "General"
+    Owner = "threadFSM"
+    msgID = 2
+    msgType = "dict"            # {"state": str, "sign": str, "obstacle_zone": str}
