@@ -393,7 +393,12 @@ class processDashboard(WorkerProcess):
             return
 
         for msg, subscriber in self.messages.items():
-            resp = subscriber["obj"].receive()
+            try:
+                resp = subscriber["obj"].receive()
+            except Exception as e:
+                if self.debugging:
+                    self.logger.error(f"[Dashboard] receive error for {msg}: {e}")
+                continue
             if resp is not None:
                 if msg == "SerialConnectionState":
                     self.serialConnected = resp
