@@ -18,7 +18,8 @@
 # OUTPUT:
 #   - shared_container['last_scan']:
 #       {"data": [(intensity, angle_deg, distance_mm), ...], "timestamp": float}
-#   - Sets last_scan = None on hardware failure so threadDetector triggers DANGER.
+#       Published once per full revolution (~10 Hz), covering all 360°.
+#       Revolution boundary detected by start-angle wrap-around.
 # ==============================================================================
 
 import struct
@@ -164,33 +165,48 @@ class threadReader(ThreadWithStop):
     # ── Main loop ─────────────────────────────────────────────────────────────
 
     def thread_work(self):
-        """Continuously read LD19 packets and publish to shared_container."""
+        """Accumulate full LD19 revolutions and publish complete scans.
+
+        One revolution (~12 packets, ~144 points covering 360°) is detected
+        by a start-angle wrap-around. Publishing a full scan instead of one
+        packet guarantees that threadDetector always sees every angular sector.
+        """
         if self.serial_port is None:
             self.logging.error("[LiDAR Reader] No serial port — cannot acquire data.")
             time.sleep(1.0)
             return
 
         try:
+            current_scan = []
+            prev_start_angle = None
+
             while not self._blocker.is_set():
                 packet = self._read_packet()
                 if packet is None:
                     break   # stop requested
 
+                start_angle = struct.unpack_from('<H', packet, 4)[0] / 100.0
                 points = self._parse_packet(packet)
-                if points:
-                    self.shared_container['last_scan'] = {
-                        "data":      points,
-                        "timestamp": time.perf_counter(),
-                    }
-                    if self.debugging:
-                        self.logging.info(
-                            f"[LiDAR Reader] Packet OK — {len(points)} points.")
+
+                if prev_start_angle is not None and start_angle < prev_start_angle:
+                    # Angle wrapped around — one full revolution complete.
+                    # Publish the accumulated scan and start a new one.
+                    if current_scan:
+                        self.shared_container['last_scan'] = {
+                            "data":      current_scan,
+                            "timestamp": time.perf_counter(),
+                        }
+                        if self.debugging:
+                            self.logging.info(
+                                f"[LiDAR Reader] Full scan — {len(current_scan)} points.")
+                    current_scan = list(points)
+                else:
+                    current_scan.extend(points)
+
+                prev_start_angle = start_angle
 
         except Exception as e:
             self.logging.error(f"[LiDAR Reader] Serial error: {e}")
-            # Do NOT null last_scan here — let the 300ms stale check in
-            # threadDetector handle it. Nulling immediately causes spurious
-            # DANGER triggers on brief serial hiccups.
             time.sleep(0.5)
 
     def stop(self):
