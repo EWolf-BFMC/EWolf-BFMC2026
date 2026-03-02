@@ -47,7 +47,7 @@ class threadReader(ThreadWithStop):
         
         # Clear buffer at startup to ensure a clean stream start.
         try:
-            self.lidar.clear_input()
+            self.lidar.clean_input()
         except Exception:
             self.logging.warning("[LiDAR Reader] Could not clear input at startup.")
         
