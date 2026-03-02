@@ -78,7 +78,8 @@ class threadFSM(ThreadWithStop):
 
         # --- INPUT MEMORY ---
         self.lane_info = {"e_y": 0.0, "theta_e": 0.0, "reliability": 0.0}
-        self.obstacle_info = {"distance": 2000.0, "reliability": 0.0}
+        self.obstacle_info = {"distance": 9999.0, "reliability": 1.0}
+        self.lidar_data_received = False  # True after first real LidarObstacle message
         self.active_sign = {"type": None, "distance": 2000.0}
         self.current_target_speed = SpeedLimit.CITY_MIN.value
         self.stop_timer_start = None
@@ -117,11 +118,16 @@ class threadFSM(ThreadWithStop):
 
     def evaluate_obstacle_zone(self):
         """Maps raw distance to a logical zone."""
+        # Before the first real lidar packet is received, treat as clear so
+        # the FSM doesn't lock in EMERGENCY_BRAKE during sensor startup.
+        if not self.lidar_data_received:
+            return ObstacleZone.CLEAR
+
         distance = self.obstacle_info["distance"]
         reliability = self.obstacle_info["reliability"]
 
         if reliability < 0.2:
-            return ObstacleZone.DANGER  # Unreliable sensor → treat as danger
+            return ObstacleZone.DANGER  # Sensor lost mid-run → emergency stop
 
         if distance < 250.0:
             return ObstacleZone.DANGER
@@ -152,8 +158,9 @@ class threadFSM(ThreadWithStop):
 
         lidar_data = self.lidarSub.receive()
         if lidar_data:
-            self.obstacle_info['distance'] = lidar_data.get('distance', 2000.0)
+            self.obstacle_info['distance'] = lidar_data.get('distance', 9999.0)
             self.obstacle_info['reliability'] = lidar_data.get('reliability', 0.0)
+            self.lidar_data_received = True
 
         sign_data = self.signSub.receive()
         if sign_data:
