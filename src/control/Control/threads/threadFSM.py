@@ -129,9 +129,9 @@ class threadFSM(ThreadWithStop):
         if reliability < 0.2:
             return ObstacleZone.DANGER  # Sensor lost mid-run → emergency stop
 
-        if distance < 250.0:
+        if distance < 300.0:
             return ObstacleZone.DANGER
-        elif distance < 600.0:
+        elif distance < 900.0:
             return ObstacleZone.WARNING
         else:
             return ObstacleZone.CLEAR
