@@ -205,6 +205,10 @@ class threadFSM(ThreadWithStop):
                 if self.previous_state in (BehaviorState.INTERSECTION,
                                            BehaviorState.PARKING_MANEUVER):
                     self.maneuver_complete = True
+            elif zone == ObstacleZone.WARNING:
+                # Obstacle backed off from DANGER to WARNING — slow approach
+                # instead of staying fully stopped.
+                self.current_state = BehaviorState.DECELERATING
             return
 
         # --- PRIORITY 2: TRAFFIC RULES ---
