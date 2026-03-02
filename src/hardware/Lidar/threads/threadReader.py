@@ -188,7 +188,9 @@ class threadReader(ThreadWithStop):
 
         except Exception as e:
             self.logging.error(f"[LiDAR Reader] Serial error: {e}")
-            self.shared_container['last_scan'] = None
+            # Do NOT null last_scan here — let the 300ms stale check in
+            # threadDetector handle it. Nulling immediately causes spurious
+            # DANGER triggers on brief serial hiccups.
             time.sleep(0.5)
 
     def stop(self):
