@@ -188,9 +188,9 @@ class threadReader(ThreadWithStop):
                 start_angle = struct.unpack_from('<H', packet, 4)[0] / 100.0
                 points = self._parse_packet(packet)
 
-                if prev_start_angle is not None and start_angle < prev_start_angle:
-                    # Angle wrapped around — one full revolution complete.
-                    # Publish the accumulated scan and start a new one.
+                if prev_start_angle is not None and (prev_start_angle - start_angle) > 180.0:
+                    # True revolution wrap: angle dropped >180° (e.g. 355°→5°).
+                    # Minor non-monotonic jitter within a revolution is ignored.
                     if current_scan:
                         self.shared_container['last_scan'] = {
                             "data":      current_scan,
