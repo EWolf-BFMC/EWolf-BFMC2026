@@ -40,7 +40,7 @@ class processLidar(WorkerProcess):
         try:
             # Using USB0 as verified in your previous tests
             self.lidar_obj = RPLidar('/dev/ttyUSB0')
-            self.lidar_obj.clear_input()
+            self.lidar_obj.clean_input()
             self.lidar_obj.start_motor()
             self.logging.info("[Lidar Process] Hardware online.")
         except Exception as e:
