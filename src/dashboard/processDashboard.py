@@ -370,9 +370,17 @@ class processDashboard(WorkerProcess):
 
 
     def _make_json_safe(self, obj):
-        """Recursively convert Enum values to their names for JSON serialization."""
+        """Recursively convert non-serializable values for JSON emission."""
         if isinstance(obj, Enum):
             return obj.name
+        if isinstance(obj, float):
+            if obj != obj:          # NaN
+                return None
+            if obj == float('inf'):
+                return 9999999.0   # "no obstacle" sentinel
+            if obj == float('-inf'):
+                return -9999999.0
+            return obj
         if isinstance(obj, dict):
             return {k: self._make_json_safe(v) for k, v in obj.items()}
         if isinstance(obj, (list, tuple)):
@@ -389,10 +397,13 @@ class processDashboard(WorkerProcess):
             if resp is not None:
                 if msg == "SerialConnectionState":
                     self.serialConnected = resp
-
-                self.socketio.emit(msg, {"value": self._make_json_safe(resp)})
-                if self.debugging:
-                    self.logger.info(f"{msg}: {resp}")
+                try:
+                    self.socketio.emit(msg, {"value": self._make_json_safe(resp)})
+                    if self.debugging:
+                        self.logger.info(f"{msg}: {resp}")
+                except Exception as e:
+                    if self.debugging:
+                        self.logger.error(f"[Dashboard] emit error for {msg}: {e}")
 
         eventlet.spawn_after(0.1, self.send_continuous_messages)
 
