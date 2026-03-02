@@ -9,7 +9,7 @@
 #
 # PROCESSING:
 #   - Freshness Guard: Validates that data is < 300ms old to detect sensor freezes.
-#   - Range Filtering: Extracts points only in the 30° front arc (345° to 15°).
+#   - Range Filtering: Extracts points only in the 30° front arc (255° to 285°).
 #   - Noise Reduction: Confirms obstacle only if at least 3 points are detected in ROI.
 #   - Reliability Logic: Reports 0.0 reliability on hardware failure or stale data.
 #
@@ -80,10 +80,12 @@ class threadDetector(ThreadWithStop):
                     print("[LiDAR Detector] WARNING: Stale data detected!")
                 return
 
-            # 4. FRONT ARC FILTERING (345° to 15°)
+            # 4. FRONT ARC FILTERING (255° to 285°)
+            # LD19 mounting: cable connector faces 90° (rear), so forward = 270°.
+            # ±15° gives a 30° forward arc: 255°–285°.
             front_points = [
-                dist for (_, angle, dist) in scan_data 
-                if (angle >= 345 or angle <= 15) and dist > 0
+                dist for (_, angle, dist) in scan_data
+                if (angle >= 255 and angle <= 285) and dist > 0
             ]
 
             # 5. NOISE REDUCTION & DETERMINISTIC OUTPUT
