@@ -1,52 +1,58 @@
 # ==============================================================================
 # PROCESS DESCRIPTION:
-# THIS PROCESS MANAGES THE LIDAR SENSOR AND OBSTACLE DETECTION LOGIC
-# 
+# THIS PROCESS MANAGES THE LD19 DTOF LIDAR SENSOR AND OBSTACLE DETECTION LOGIC
+#
 # THREADS:
-#   - threadReader: Constant acquisition of raw scans from hardware.
-#   - threadDetector: Analysis of scans to find frontal obstacles.
+#   - threadReader:   Raw packet acquisition from LD19 over serial (230400 baud).
+#   - threadDetector: Analyses the point cloud to find frontal obstacles.
 #
 # SHARED RESOURCES:
-#   - shared_container: Dictionary {'last_scan': []} for zero-latency data transfer.
-#   - lidar_obj: The hardware instance shared between threads.
+#   - shared_container: {'last_scan': list | None}  zero-latency inter-thread data.
+#   - serial_port:      pyserial Serial object shared with threadReader.
 # ==============================================================================
 
 if __name__ == "__main__":
     import sys
     sys.path.insert(0, "../../..")
 
-from rplidar import RPLidar
+import serial
 from src.templates.workerprocess import WorkerProcess
 from src.hardware.Lidar.threads.threadReader import threadReader
 from src.hardware.Lidar.threads.threadDetector import threadDetector
 
+_LIDAR_PORT     = '/dev/ttyUSB0'
+_LIDAR_BAUDRATE = 230400
+
+
 class processLidar(WorkerProcess):
-    """This process handles Lidar.
+    """Manages the LDROBOT LD19 DTOF Lidar.
+
     Args:
-        queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
-        logging (logging object): Made for debugging.
-        debugging (bool, optional): A flag for debugging. Defaults to False.
+        queueList  (dict): Shared multiprocessing queues.
+        logging:           Logger object.
+        ready_event:       Optional multiprocessing.Event signalled when ready.
+        debugging  (bool): Verbose logging flag.
     """
 
     def __init__(self, queueList, logging, ready_event=None, debugging=False):
-        self.queuesList = queueList
-        self.logging = logging
-        self.debugging = debugging
+        self.queuesList  = queueList
+        self.logging     = logging
+        self.debugging   = debugging
 
-        # Initialize shared memory for inter-thread communication
-        self.shared_container = {'last_scan': []}
-        
-        # Hardware initialization: RPLidar A2M8
+        self.shared_container = {'last_scan': None}
+
         try:
-            # Using USB0 as verified in your previous tests
-            self.lidar_obj = RPLidar('/dev/ttyUSB0')
-            self.lidar_obj.clean_input()
-            self.lidar_obj.start_motor()
-            self.logging.info("[Lidar Process] Hardware online.")
+            self.serial_port = serial.Serial(
+                port=_LIDAR_PORT,
+                baudrate=_LIDAR_BAUDRATE,
+                timeout=1.0,
+            )
+            self.logging.info(
+                f"[Lidar Process] LD19 online on {_LIDAR_PORT} @ {_LIDAR_BAUDRATE} baud.")
         except Exception as e:
             self.logging.error(f"[Lidar Process] Initialization failed: {e}")
-            self.lidar_obj = None
-        
+            self.serial_port = None
+
         super(processLidar, self).__init__(self.queuesList, ready_event)
 
     def state_change_handler(self):
@@ -56,26 +62,29 @@ class processLidar(WorkerProcess):
         pass
 
     def _init_threads(self):
-        """Create and start the Lidar Reader and Detector threads."""
-        # 1. Thread for raw data acquisition
+        """Create threadReader (acquisition) and threadDetector (analysis)."""
         ReaderTh = threadReader(
-            self.lidar_obj, 
-            self.shared_container, 
-            self.queuesList, 
-            self.logging, 
-            self.debugging
+            self.serial_port,
+            self.shared_container,
+            self.queuesList,
+            self.logging,
+            self.debugging,
         )
         self.threads.append(ReaderTh)
-        
-        # 2. Thread for mathematical analysis of the point cloud
+
         DetectorTh = threadDetector(
-            self.shared_container, 
-            self.queuesList, 
-            self.logging, 
-            self.debugging
+            self.shared_container,
+            self.queuesList,
+            self.logging,
+            self.debugging,
         )
         self.threads.append(DetectorTh)
 
     def stop(self):
-        """Graceful shutdown: stop threads first so threadReader.stop() handles hardware teardown."""
+        """Graceful shutdown: stop threads first, then close the serial port."""
         super(processLidar, self).stop()
+        if self.serial_port and self.serial_port.is_open:
+            try:
+                self.serial_port.close()
+            except Exception:
+                pass
