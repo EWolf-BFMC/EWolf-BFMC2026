@@ -152,9 +152,15 @@ class threadFSM(ThreadWithStop):
         """
         lane_data = self.laneSub.receive()
         if lane_data:
-            self.lane_info['e_y'] = lane_data.get('e_y', 0.0)
-            self.lane_info['theta_e'] = lane_data.get('theta_e', 0.0)
             self.lane_info['reliability'] = lane_data.get('reliability', 0.0)
+            if self.lane_info['reliability'] >= 0.3:
+                self.lane_info['e_y']     = lane_data.get('e_y', 0.0)
+                self.lane_info['theta_e'] = lane_data.get('theta_e', 0.0)
+            else:
+                # Lane lost or unreliable — drive straight rather than
+                # chasing a stale cross-track error.
+                self.lane_info['e_y']     = 0.0
+                self.lane_info['theta_e'] = 0.0
 
         lidar_data = self.lidarSub.receive()
         if lidar_data:
