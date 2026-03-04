@@ -63,7 +63,7 @@ class threadWrite(ThreadWithStop):
     """
 
     # ===================================== INIT =========================================
-    def __init__(self, process, logFile, queues, logger, debugger = False, example=False):
+    def __init__(self, process, logFile, queues, logger, debugger = True, example=False):
         super(threadWrite, self).__init__(pause=0.001)
         self.process = process
         self.queuesList = queues
@@ -156,6 +156,18 @@ class threadWrite(ThreadWithStop):
     def thread_work(self):
         """In this function we check if we got the enable engine signal. After we got it we will start getting messages from raspberry PI. It will transform them into NUCLEO commands and send them."""
         try:
+            # DIAG: log KL state every ~5s (thread runs at 1ms → 5000 iterations)
+            self._diag_tick = getattr(self, '_diag_tick', 0) + 1
+            if self._diag_tick % 5000 == 1:
+                #self.logger.warning(f"[SerialHandler] State: running={self.running}, engineEnabled={self.engineEnabled}")
+                pass
+
+            # NUCLEO alive watchdog: send #alive:0;; every 500ms to prevent the NUCLEO
+            # from locking the servo at the first commanded position.
+            self._alive_tick = getattr(self, '_alive_tick', 0) + 1
+            if self._alive_tick % 500 == 1:
+                self.send_to_serial({"action": "alive", "activate": 0})
+
             klRecv = self.klSubscriber.receive()
             if klRecv is not None:
                 if self.debugger:
@@ -201,19 +213,29 @@ class threadWrite(ThreadWithStop):
                         command = {"action": "brake", "steerAngle": int(brakeRecv)}
                         self.send_to_serial(command)
 
-                    speedRecv = self.speedMotorSubscriber.receive()
-                    if speedRecv is not None: 
-                        if self.debugger:
-                            self.logger.info(speedRecv)
-                        command = {"action": "speed", "speed": int(speedRecv)}
-                        self.send_to_serial(command)
+                    # Rate-limit speed+steer to 20Hz (every 50 cycles at 1ms loop)
+                    # to avoid overwhelming the NUCLEO's servo update rate.
+                    self._motor_tick = getattr(self, '_motor_tick', 0) + 1
+                    if self._motor_tick % 50 == 0:
+                        speedRecv = self.speedMotorSubscriber.receive()
+                        if speedRecv is not None:
+                            if self.debugger:
+                                self.logger.info(speedRecv)
+                            command = {"action": "speed", "speed": int(speedRecv)}
+                            self.send_to_serial(command)
 
-                    steerRecv = self.steerMotorSubscriber.receive()
-                    if steerRecv is not None:
-                        if self.debugger:
-                            self.logger.info(steerRecv) 
-                        command = {"action": "steer", "steerAngle": int(steerRecv)}
-                        self.send_to_serial(command)
+                        steerRecv = self.steerMotorSubscriber.receive()
+                        if steerRecv is not None:
+                            if self.debugger:
+                                self.logger.info(steerRecv)
+                            command = {"action": "steer", "steerAngle": int(steerRecv)}
+                            # DIAG: log every 20th dispatch (~1s at 20Hz)
+                            #self._steer_diag_count = getattr(self, '_steer_diag_count', 0) + 1
+                            #if self._steer_diag_count % 20 == 1:
+                                #sc = self.process.serialCon
+                                #connected = bool(sc and self.process.serialConnected and sc.is_open)
+                                #self.logger.warning(f"[SerialHandler] STEER #{self._steer_diag_count}: {steerRecv} d-deg | serial_open={connected}")
+                            self.send_to_serial(command)
 
                     controlRecv = self.controlSubscriber.receive()
                     if controlRecv is not None:

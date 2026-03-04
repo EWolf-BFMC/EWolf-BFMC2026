@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
+
 from src.templates.threadwithstop import ThreadWithStop
 import time
 
@@ -64,9 +65,11 @@ class threadGateway(ThreadWithStop):
             self.sendingList[Owner] = {}
         if not Id in self.sendingList[Owner].keys():
             self.sendingList[Owner][Id] = {}
-        if not To in self.sendingList[Owner][Id].keys():
-            self.sendingList[Owner][Id][To] = Pipe
-        self.messageApproved.append((Owner, Id))
+        # Always overwrite — refreshes stale pipes from restarted processes (e.g. processControl)
+        self.sendingList[Owner][Id][To] = Pipe
+        # Avoid duplicate entries that would cause double-removal on BrokenPipeError
+        if (Owner, Id) not in self.messageApproved:
+            self.messageApproved.append((Owner, Id))
         # Debugging( you can comment this):
         if self.debugging:
             self.print_list()
@@ -115,6 +118,9 @@ class threadGateway(ThreadWithStop):
                     broken.append(element)
             for element in broken:
                 del self.sendingList[Owner][Id][element]
+            # Only remove from approved if NO subscribers remain — removing on every broken pipe
+            # would kill delivery to all other valid subscribers for this message type.
+            if not self.sendingList[Owner][Id]:
                 try:
                     self.messageApproved.remove((Owner, Id))
                 except ValueError:

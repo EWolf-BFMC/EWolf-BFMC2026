@@ -189,7 +189,7 @@ class SystemMode(Enum):
         },
 	    "Lidar": {
             "process": {
-                "enabled": True,
+                "enabled": False,
             }
         },
         "Control": {

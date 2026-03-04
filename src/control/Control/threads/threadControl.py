@@ -48,18 +48,22 @@ class threadControl(ThreadWithStop):
         self.debugging = debugging
         
         # --- Stanley Controller Parameters ---
-        self.k = 1.25             # Convergence gain
-        self.ks = 0.5             # Softening constant
-        
+        self.k = 4.0              # Conservative: stable at all FSM speeds including DECELERATING (v=0.1m/s)
+        # self.k = 2.5            # [PREV] Too aggressive when v drops below 0.15m/s — causes overshoot
+        self.ks = 0.5             # LaneBefore.py baseline
+        # self.ks = 0.1           # Metric e_y: small softening (restore when BEV verified)
+
         # --- Damping Parameters  ---
-        self.kd = 0.25            # Damping gain to stop oscillations
+        self.kd = 0.15             # Disabled — set to 0 to turn off, NOT removed (restore to tune)
+        # self.kd = 0.1           # Light damping: smooths hard direction reversals
         self.prev_steering_angle_rad = 0.0 # Memory for the derivative term
         
         # --- Calibration & Constraints ---
         self.max_steer_deg = 25.0   #Max steering
         self.steering_bias_deg = 0.0 # Track-day adjustment for misalignment
         self.MAX_COMMAND_STALE_TIME = 0.2 # 200ms guard
-        
+        self._last_command = None         # Cache for brief gateway gaps
+
         self.subscribe()
         
         # Senders for the NUCLEO motor and steering actuators
@@ -84,14 +88,17 @@ class threadControl(ThreadWithStop):
         Main Loop: Behavior Execution.
         Executes the BehaviorState decided by threadFSM.
         """
-        command_packet = self.commandSubscriber.receive()
-        
-        # FAIL-SAFE: Stop if logic thread dies
+        new_packet = self.commandSubscriber.receive()
+        if new_packet:
+            self._last_command = new_packet
+        command_packet = self._last_command
+
+        # FAIL-SAFE: Stop if FSM has never sent a command yet
         if not command_packet:
             self.send_commands(0.0, 0.0)
             return
 
-        # Close the loop on logic freezes
+        # Close the loop on logic freezes (stale cached command)
         msg_time = command_packet.get("timestamp")
         if not msg_time:
             self.send_commands(0.0, 0.0)
@@ -151,6 +158,9 @@ class threadControl(ThreadWithStop):
                 return
 
             # Stanley Law
+            # e_y sign convention: negative = car is RIGHT of lane → needs RIGHT steer.
+            # Physical servo convention: negative command = RIGHT, positive = LEFT.
+            # e_y < 0 → atan2 returns negative → RIGHT steer → correct convergence.
             steering_adj = math.atan2(self.k * e_y, v + self.ks)
             desired_rad = theta_e + steering_adj
             
@@ -163,8 +173,14 @@ class threadControl(ThreadWithStop):
             steer_deg = math.degrees(final_rad)
             steer_deg = max(min(steer_deg, self.max_steer_deg), -self.max_steer_deg)
             
+            # DIAG: log every 50th call (~0.5s at 100Hz) to observe sign correlation
+            self._stanley_diag = getattr(self, '_stanley_diag', 0) + 1
+            if self._stanley_diag % 50 == 1:
+                self.logging.warning(f"[Stanley] e_y={e_y:.4f}m | steer={steer_deg:.1f}deg")
+                #pass
+
             self.send_commands(v, steer_deg)
-            
+
         except Exception as e:
             self.logging.error(f"Stanley Error: {e}")
 
