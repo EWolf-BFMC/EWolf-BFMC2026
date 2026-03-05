@@ -41,7 +41,7 @@ class threadLane(ThreadWithStop):
         
         # --- MOVING AVERAGE FILTERS ---
         # Automatic window management using deque
-        self.buffer_size = 5
+        self.buffer_size = 3
         self.e_y_buffer = deque(maxlen=self.buffer_size)
         self.theta_e_buffer = deque(maxlen=self.buffer_size)
 
@@ -138,14 +138,21 @@ class threadLane(ThreadWithStop):
         # lines = cv2.HoughLinesP(roi_edges, 1, np.pi/180, 35, minLineLength=20, maxLineGap=100)  # Previous
         
         if lines is not None:
-            left_centers, right_centers = [], []
+            left_centers, right_centers, angles = [], [], []
             for line in lines:
-                x1, x2 = line[0][0], line[0][2]
+                x1, y1, x2, y2 = line[0]
                 cx = (x1 + x2) / 2
                 if cx < w / 2:
                     left_centers.append(cx)   # Left boundary (center divider side)
                 else:
                     right_centers.append(cx)  # Right boundary (outer edge side)
+
+                # theta_e: normalize to remove HoughLinesP endpoint-flip ambiguity.
+                # a % pi maps any angle to [0, pi); subtracting pi/2 centers it so
+                # vertical lines → 0, left-tilt → negative, right-tilt → positive.
+                a = np.arctan2(y2 - y1, x2 - x1) % np.pi - np.pi / 2
+                if abs(a) < np.pi / 4:  # discard near-horizontal noise
+                    angles.append(a)
 
             # Compute lane center as the midpoint between the two boundary groups.
             # Falls back to a single-side estimate if only one boundary is visible.
@@ -170,14 +177,7 @@ class threadLane(ThreadWithStop):
             # [PREV-NO-SPLIT] self.e_y_buffer.append(-e_y_pixels / self.BEV_PIXELS_PER_METER + ...)
             # This was wrong: mean of all lines biases toward dominant boundary → positive feedback
 
-            # theta_e: disabled — HoughLinesP endpoint ordering is non-deterministic,
-            # raw np.mean(angles) does NOT reliably cancel to 0 on straights with Picamera2.
-            # Keeping e_y-only Stanley; theta_e restored here only if BEV is precisely calibrated.
-            self.theta_e_buffer.append(0.0)
-            # [RAW] self.theta_e_buffer.append(np.mean(angles) if angles else 0.0)
-            # [NORM] Normalized version (also disabled — causes positive feedback on miscalibrated BEV):
-            # [NORM] normalized = [(a + np.pi if a < 0 else a) - np.pi/2 for a in angles]
-            # [NORM] self.theta_e_buffer.append(np.mean(normalized) if normalized else 0.0)
+            self.theta_e_buffer.append(np.mean(angles) if angles else 0.0)
         
         elif len(self.e_y_buffer) > 0:
             # Drain buffer to alert FSM of lane loss
