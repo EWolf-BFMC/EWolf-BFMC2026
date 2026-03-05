@@ -18,8 +18,14 @@
 #   - Destination: threadFSM (The Brain)
 # ==============================================================================
 
+# ==============================================================================
+# THREAD FLOW DESCRIPTION:
+# THIS THREAD DETECTS AND CLASSIFIES ROAD SIGNS USING COMPUTER VISION.
+# ==============================================================================
+
 import cv2
 import numpy as np
+from ultralytics import YOLO  # Import the AI
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.allMessages import SignDetection 
@@ -31,28 +37,45 @@ class threadSigns(ThreadWithStop):
     It provides the 'Sense' data for traffic signs to the FSM.
     """
 
-    def __init__(self, queueList, logging, debugging, shared_container):
-        """
-        Args:
-            queueList (dict): Dictionary of multiprocessing queues.
-            logging (object): Logger for event tracking.
-            debugging (bool): If True, enables console feedback.
-            shared_container (dict): Shared dictionary for raw frames.
-        """
+    def __init__(self, queueList, logging, debugging, shared_container): # FIXED: __init__
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
         self.shared_container = shared_container
         
         # --- VISION MODEL CONFIGURATION ---
-        # SHOULD INITIALIZE the YOLO/TFLite model here
-        self.model = None
+        # Load the optimized model for the Raspberry Pi 5
+        self.model = YOLO('models/best.onnx', task='detect')
         
-        # Sender to communicate detections to the threadFSM
+        # --- DISTANCE CALIBRATION ---
+        self.focal_length = 984.0
+        self.real_width_dict = {
+            "traffic_light": 200.0, "stop": 200.0, "parking": 200.0, 
+            "crosswalk": 200.0, "priority_road": 200.0, "highway": 200.0, 
+            "highway_exit": 200.0, "one_way": 200.0, "roundabout": 200.0, 
+            "no_entry": 200.0
+        }
+        
+        # --- MAPPING YOLO TO FSM ENUMS ---
+        # Translates the AI text into the language understood by the FSM brain
+        self.str_to_enum = {
+            "traffic_light": SignType.TRAFFIC_LIGHT, 
+            "stop": SignType.STOP,
+            "parking": SignType.PARKING,
+            "crosswalk": SignType.CROSSWALK,
+            "priority_road": SignType.PRIORITY,
+            "highway": SignType.HIGHWAY_ENTRY,
+            "highway_exit": SignType.HIGHWAY_EXIT,
+            "one_way": SignType.ONE_WAY,
+            "roundabout": SignType.ROUNDABOUT,
+            "no_entry": SignType.NO_ENTRY
+        }
+        
+        # Sender to communicate detections to threadFSM
         self.signSender = messageHandlerSender(self.queuesList, SignDetection)
         self.subscribe()
 
-        super(threadSigns, self).__init__(pause=0.01) # 100Hz loop
+        super(threadSigns, self).__init__(pause=0.01) # FIXED: __init__
 
     def subscribe(self):
         """No subscribers needed; data is pulled from shared memory."""
@@ -60,32 +83,32 @@ class threadSigns(ThreadWithStop):
 
     def thread_work(self):
         """Main perception loop: Acquisition -> Vision AI -> Transmission."""
-        # 1. ACQUISITION: Grab the raw BGR frame directly from RAM
+        # 1. ACQUISITION: Take the frame from RAM
         frame = self.shared_container.get('frame')
         
         if frame is not None:
             try:
-                # 2. PROCESSING: IMPLEMENT HERE VISION ALGORITHM
-                # This is where your will call the model
-
-                #Resizing frame
-                # Use 320 or 416 according on how fast is the yolo model
-                input_res = 320 
+                # 2. PROCESSING:
+                # INCREASED to 640 because we retrained the model to see at +80cm
+                input_res = 640 
                 small_frame = cv2.resize(frame, (input_res, input_res))
                 
-                # We use the small frame for the AI
+                # Pass the image to our detection function
                 detections = self.detect_signs(small_frame)
-
                 
                 if detections:
                     for det in detections:
-                        # 3. OUTPUT: Send filtered data to the FSM
-                        # Expected format: {"type": int, "distance": float}
+                        # 3. OUTPUT: Send the packet to the FSM
                         self.signSender.send(det)
+                        self._dign_diag = getattr(self, '_dign_diag', 0) + 1
+                        if self._dign_diag % 50 == 1:
+                            self.logging.warning(f"[Signs] Detected: {det['type'].name} at {det['distance']:.1f}mm")
+                            #pass
                         
                         if self.debugging:
-                            print(f"[Signs] Detected ID: {det['type']} at {det['distance']:.1f}mm")
-                
+                            # Print in terminal only the Enum (e.g., SignType.STOP) and the distance
+                            print(f"[Signs] Detected: {det['type'].name} at {det['distance']:.1f}mm")
+                            
             except Exception as e:
                 self.logging.error(f"[threadSigns] Vision processing error: {e}")
 
@@ -95,21 +118,37 @@ class threadSigns(ThreadWithStop):
 
     def detect_signs(self, frame):
         """
-        IMPLEMENT HERE SIGN DETECTION AND DISTANCE ESTIMATION.
-        
-        This function should:
-        1. Run inference on the frame.
-        2. Filter detections by confidence.
-        3. Calculate distance, could be using: d = (RealWidth * FocalLength) / PixelWidth
-        4. Return a list of dictionaries.
-        
-        Example Return:
-            return [{"type": SignType.STOP.value, "distance": 450.2}]
+        1. Run YOLO inference.
+        2. Filter by confidence.
+        3. Calculate distance.
+        4. Return the list of dictionaries expected by the FSM.
         """
-        # --- ADD CODE HERE ---
+        # Require a minimum confidence of 75%
+        results = self.model(frame, conf=0.75, verbose=False)
+        detections_list = []
         
-        return [] # Placeholder
+        if len(results[0].boxes) > 0:
+            for box in results[0].boxes:
+                cls_id = int(box.cls[0])
+                class_name = self.model.names[cls_id]
+                
+                # Translate from String to Enum
+                sign_enum = self.str_to_enum.get(class_name, None)
+                
+                if sign_enum is not None:
+                    # Distance calculation
+                    w_px = float(box.xywh[0][2])
+                    w_real = self.real_width_dict.get(class_name, 200.0)
+                    distance_mm = (w_real * self.focal_length) / w_px
+                    
+                    # Package in the exact format requested by the FSM
+                    payload = {
+                        "type": sign_enum, 
+                        "distance": float(distance_mm)
+                    }
+                    detections_list.append(payload)
+                    
+        return detections_list
 
     def state_change_handler(self):
-        """Standard handler for system mode changes."""
         pass

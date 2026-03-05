@@ -48,13 +48,13 @@ class threadControl(ThreadWithStop):
         self.debugging = debugging
         
         # --- Stanley Controller Parameters ---
-        self.k = 4.0              # Conservative: stable at all FSM speeds including DECELERATING (v=0.1m/s)
+        self.k = 5.5         # Conservative: stable at all FSM speeds including DECELERATING (v=0.1m/s)
         # self.k = 2.5            # [PREV] Too aggressive when v drops below 0.15m/s — causes overshoot
-        self.ks = 0.5             # LaneBefore.py baseline
+        self.ks = 0.5            # LaneBefore.py baseline
         # self.ks = 0.1           # Metric e_y: small softening (restore when BEV verified)
 
         # --- Damping Parameters  ---
-        self.kd = 0.15             # Disabled — set to 0 to turn off, NOT removed (restore to tune)
+        self.kd = 0.4          # Disabled — set to 0 to turn off, NOT removed (restore to tune)
         # self.kd = 0.1           # Light damping: smooths hard direction reversals
         self.prev_steering_angle_rad = 0.0 # Memory for the derivative term
         
@@ -150,6 +150,7 @@ class threadControl(ThreadWithStop):
             e_y = data.get('e_y', 0.0)         
             theta_e = data.get('theta_e', 0.0) 
             v = data.get('speed', 0.0)  # Dynamic speed
+            v = 40
 
             # If the car is stopped, keep wheels straight to avoid servo wear
             if v < 0.01:
@@ -176,8 +177,8 @@ class threadControl(ThreadWithStop):
             # DIAG: log every 50th call (~0.5s at 100Hz) to observe sign correlation
             self._stanley_diag = getattr(self, '_stanley_diag', 0) + 1
             if self._stanley_diag % 50 == 1:
-                self.logging.warning(f"[Stanley] e_y={e_y:.4f}m | steer={steer_deg:.1f}deg")
-                #pass
+                #self.logging.warning(f"[Stanley] e_y={e_y:.4f}m | steer={steer_deg:.1f}deg")
+                pass
 
             self.send_commands(v, steer_deg)
 
