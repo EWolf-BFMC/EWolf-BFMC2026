@@ -142,8 +142,8 @@ class threadCamera(ThreadWithStop):
             if self._dashboard_tick % 4 != 0:
                 return
 
-            _, mainEncodedImg = cv2.imencode(".jpg", mainRequest) # type: ignore
-            _, serialEncodedImg = cv2.imencode(".jpg", serialRequest) # type: ignore
+            _, mainEncodedImg = cv2.imencode(".jpg", mainRequest, [cv2.IMWRITE_JPEG_QUALITY, 60]) # type: ignore
+            _, serialEncodedImg = cv2.imencode(".jpg", serialRequest, [cv2.IMWRITE_JPEG_QUALITY, 60]) # type: ignore
 
             mainEncodedImageData = base64.b64encode(mainEncodedImg).decode("utf-8") # type: ignore
             serialEncodedImageData = base64.b64encode(serialEncodedImg).decode("utf-8") # type: ignore

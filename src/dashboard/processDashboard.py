@@ -91,9 +91,9 @@ class processDashboard(WorkerProcess):
         # heartbeat
         self.heartbeat_last_sent = time.time()
         self.heartbeat_retries = 0
-        self.heartbeat_max_retries = 3
-        self.heartbeat_time_between_heartbeats = 20 # seconds
-        self.heartbeat_time_between_retries = 5 # seconds # put a higher value if the connection is not stable (e.g. 5 seconds)
+        self.heartbeat_max_retries = 5
+        self.heartbeat_time_between_heartbeats = 30 # seconds
+        self.heartbeat_time_between_retries = 10 # seconds
         self.heartbeat_received = False
 
         # session management
