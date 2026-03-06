@@ -50,7 +50,7 @@ class threadSigns(ThreadWithStop):
         self.signSender = messageHandlerSender(self.queuesList, SignDetection)
         self.subscribe()
 
-        super(threadSigns, self).__init__(pause=0.01) # FIXED: __init__
+        super(threadSigns, self).__init__(pause=0.1)  # 10Hz — YOLO inference is ~100ms on Pi5
 
     def subscribe(self):
         """No subscribers needed; data is pulled from shared memory."""
