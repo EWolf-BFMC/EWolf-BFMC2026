@@ -1,28 +1,3 @@
-# ==============================================================================
-# THREAD FLOW DESCRIPTION:
-# THIS THREAD DETECTS AND CLASSIFIES ROAD SIGNS USING COMPUTER VISION.
-# 
-# INPUT: 
-#   - Name: shared_container['frame']
-#   - Format: Raw OpenCV BGR Mat (Zero-copy from RAM)
-#   - Source: threadCamera (Internal Process Memory)
-#
-# PROCESSING (NOT DONE YET):
-#   - Detection: AI Model (YOLO/TFLite) to locate signs in the frame.
-#   - Classification: Mapping detections to BFMC SignType IDs.
-#   - Distance: Estimating distance (mm) based on bounding box width.
-#
-# OUTPUT:
-#   - Name: SignDetection
-#   - Format: Dictionary {"type": int, "distance": float}
-#   - Destination: threadFSM (The Brain)
-# ==============================================================================
-
-# ==============================================================================
-# THREAD FLOW DESCRIPTION:
-# THIS THREAD DETECTS AND CLASSIFIES ROAD SIGNS USING COMPUTER VISION.
-# ==============================================================================
-
 import cv2
 import numpy as np
 from ultralytics import YOLO  # Import the AI
@@ -45,7 +20,7 @@ class threadSigns(ThreadWithStop):
         
         # --- VISION MODEL CONFIGURATION ---
         # Load the optimized model for the Raspberry Pi 5
-        self.model = YOLO('models/best.onnx', task='detect')
+        self.model = YOLO('models/best_ncnn_model', task='detect')
         
         # --- DISTANCE CALIBRATION ---
         self.focal_length = 984.0
@@ -94,20 +69,22 @@ class threadSigns(ThreadWithStop):
                 small_frame = cv2.resize(frame, (input_res, input_res))
                 
                 # Pass the image to our detection function
-                detections = self.detect_signs(small_frame)
-                
+                detections, annotated_frame = self.detect_signs(small_frame)
+
+                # 3. OUTPUT: Save annotated frame so the dashboard can display it
+                self.shared_container['annotated_frame'] = annotated_frame
+
                 if detections:
                     for det in detections:
-                        # 3. OUTPUT: Send the packet to the FSM
+                        # 4. OUTPUT: Send the packet to the FSM
                         self.signSender.send(det)
                         self._dign_diag = getattr(self, '_dign_diag', 0) + 1
                         if self._dign_diag % 50 == 1:
                             self.logging.warning(f"[Signs] Detected: {det['type'].name} at {det['distance']:.1f}mm")
                             #pass
-                        
-                        if self.debugging:
-                            # Print in terminal only the Enum (e.g., SignType.STOP) and the distance
-                            print(f"[Signs] Detected: {det['type'].name} at {det['distance']:.1f}mm")
+
+                        # Print in terminal the Enum (e.g., SignType.STOP) and the distance
+                        #print(f"[Signs] Detected: {det['type'].name} at {det['distance']:.1f}mm")
                             
             except Exception as e:
                 self.logging.error(f"[threadSigns] Vision processing error: {e}")
@@ -121,34 +98,38 @@ class threadSigns(ThreadWithStop):
         1. Run YOLO inference.
         2. Filter by confidence.
         3. Calculate distance.
-        4. Return the list of dictionaries expected by the FSM.
+        4. Return (detections_list, annotated_frame) where annotated_frame has
+           bounding boxes drawn by YOLO's built-in .plot() method.
         """
-        # Require a minimum confidence of 75%
-        results = self.model(frame, conf=0.75, verbose=False)
+        # Require a minimum confidence of 80%
+        results = self.model(frame, conf=0.80, verbose=False)
         detections_list = []
-        
+
+        # Draw bounding boxes on the frame (labels + confidence included)
+        annotated_frame = results[0].plot()
+
         if len(results[0].boxes) > 0:
             for box in results[0].boxes:
                 cls_id = int(box.cls[0])
                 class_name = self.model.names[cls_id]
-                
+
                 # Translate from String to Enum
                 sign_enum = self.str_to_enum.get(class_name, None)
-                
+
                 if sign_enum is not None:
                     # Distance calculation
                     w_px = float(box.xywh[0][2])
                     w_real = self.real_width_dict.get(class_name, 200.0)
                     distance_mm = (w_real * self.focal_length) / w_px
-                    
+
                     # Package in the exact format requested by the FSM
                     payload = {
-                        "type": sign_enum, 
+                        "type": sign_enum,
                         "distance": float(distance_mm)
                     }
                     detections_list.append(payload)
-                    
-        return detections_list
+
+        return detections_list, annotated_frame
 
     def state_change_handler(self):
         pass

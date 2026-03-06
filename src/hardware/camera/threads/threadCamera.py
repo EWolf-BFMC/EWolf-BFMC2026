@@ -136,8 +136,11 @@ class threadCamera(ThreadWithStop):
             # Store raw BGR frame in shared RAM for threadLane and threadSigns
             self.shared_container['frame'] = serialRequest
 
+            # Use annotated frame (with sign bounding boxes) if threadSigns has produced one
+            display_frame = self.shared_container.get('annotated_frame') or serialRequest
+
             _, mainEncodedImg = cv2.imencode(".jpg", mainRequest) # type: ignore
-            _, serialEncodedImg = cv2.imencode(".jpg", serialRequest) # type: ignore
+            _, serialEncodedImg = cv2.imencode(".jpg", display_frame) # type: ignore
 
             mainEncodedImageData = base64.b64encode(mainEncodedImg).decode("utf-8") # type: ignore
             serialEncodedImageData = base64.b64encode(serialEncodedImg).decode("utf-8") # type: ignore
