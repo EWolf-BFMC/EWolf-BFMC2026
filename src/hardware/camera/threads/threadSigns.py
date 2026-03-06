@@ -86,12 +86,13 @@ class threadSigns(ThreadWithStop):
                     detected_types = {d['type'] for d in detections}
                     for sign_type in list(self._consecutive.keys()):
                         if sign_type not in detected_types:
-                            self._consecutive[sign_type] = 0  # reset si desaparece
+                            self._consecutive[sign_type] = 0  # reset
 
                     confirmed = []
                     for det in detections:
                         t = det['type']
                         self._consecutive[t] = self._consecutive.get(t, 0) + 1
+                        self.logging.warning(f"[Signs] RAW: {t.name} cnt={self._consecutive[t]} dist={det['distance']:.0f}mm")
                         if self._consecutive[t] >= self.CONFIRM_FRAMES:
                             confirmed.append(det)
 
@@ -99,7 +100,7 @@ class threadSigns(ThreadWithStop):
                         self.signSender.send(det)
                         self.logging.warning(f"[Signs] CONFIRMED: {det['type'].name} a {det['distance']:.1f}mm")
                     
-                    
+
             except Exception as e:
                 self.logging.error(f"[threadSigns] Vision processing error: {e}")
 
