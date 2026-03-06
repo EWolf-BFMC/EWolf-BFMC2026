@@ -69,10 +69,7 @@ class threadSigns(ThreadWithStop):
                 small_frame = cv2.resize(frame, (input_res, input_res))
                 
                 # Pass the image to our detection function
-                detections, annotated_frame = self.detect_signs(small_frame)
-
-                # 3. OUTPUT: Save annotated frame so the dashboard can display it
-                self.shared_container['annotated_frame'] = annotated_frame
+                detections = self.detect_signs(small_frame)
 
                 if detections:
                     for det in detections:
@@ -98,15 +95,11 @@ class threadSigns(ThreadWithStop):
         1. Run YOLO inference.
         2. Filter by confidence.
         3. Calculate distance.
-        4. Return (detections_list, annotated_frame) where annotated_frame has
-           bounding boxes drawn by YOLO's built-in .plot() method.
+        4. Return detections_list of dicts expected by the FSM.
         """
         # Require a minimum confidence of 80%
         results = self.model(frame, conf=0.80, verbose=False)
         detections_list = []
-
-        # Draw bounding boxes on the frame (labels + confidence included)
-        annotated_frame = results[0].plot()
 
         if len(results[0].boxes) > 0:
             for box in results[0].boxes:
@@ -129,7 +122,7 @@ class threadSigns(ThreadWithStop):
                     }
                     detections_list.append(payload)
 
-        return detections_list, annotated_frame
+        return detections_list
 
     def state_change_handler(self):
         pass
