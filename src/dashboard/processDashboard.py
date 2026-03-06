@@ -385,19 +385,24 @@ class processDashboard(WorkerProcess):
             try:
                 resp = subscriber["obj"].receive()
             except Exception as e:
-                if self.debugging:
-                    self.logger.error(f"[Dashboard] receive error for {msg}: {e}")
+                print(f"\033[1;97m[ Dashboard ] :\033[0m \033[1;91mERROR\033[0m - receive error for {msg}: {e}")
                 continue
             if resp is not None:
+                if msg == "serialCamera":
+                    self._camera_last_received = getattr(self, '_camera_last_received', 0)
+                    self._camera_last_received = time.time()
                 if msg == "SerialConnectionState":
                     self.serialConnected = resp
                 try:
                     self.socketio.emit(msg, {"value": self._make_json_safe(resp)})
-                    if self.debugging:
-                        self.logger.info(f"{msg}: {resp}")
                 except Exception as e:
-                    if self.debugging:
-                        self.logger.error(f"[Dashboard] emit error for {msg}: {e}")
+                    print(f"\033[1;97m[ Dashboard ] :\033[0m \033[1;91mERROR\033[0m - emit error for {msg}: {e}")
+
+        # Warn if camera frames stopped arriving
+        last = getattr(self, '_camera_last_received', None)
+        if last is not None and (time.time() - last) > 3.0:
+            print(f"\033[1;97m[ Dashboard ] :\033[0m \033[1;93mWARNING\033[0m - No serialCamera frame for {time.time()-last:.1f}s")
+            self._camera_last_received = time.time()  # throttle repeat warnings
 
         eventlet.spawn_after(0.1, self.send_continuous_messages)
 
