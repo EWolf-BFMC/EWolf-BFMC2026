@@ -44,7 +44,6 @@ from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import StateChange
-from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.statemachine.systemMode import SystemMode
 
 class threadCamera(ThreadWithStop):
@@ -57,7 +56,7 @@ class threadCamera(ThreadWithStop):
 
     # ================================ INIT ===============================================
     def __init__(self, queuesList, logger, debugger, shared_container): # Added shared_container
-        super(threadCamera, self).__init__(pause=0.001)
+        super(threadCamera, self).__init__(pause=0.05)   # 20Hz — prevents queue flooding dashboard
         self.queuesList = queuesList
         self.logger = logger
         self.debugger = debugger
@@ -105,7 +104,7 @@ class threadCamera(ThreadWithStop):
             recordRecv = self.recordSubscriber.receive()
             if recordRecv is not None: 
                 self.recording = bool(recordRecv)
-                if recordRecv == False:
+                if recordRecv is False:  # <-- Corrección segura aplicada
                     if self.video_writer is not None:
                         self.video_writer.release() # type: ignore
                         self.video_writer = None
@@ -120,14 +119,15 @@ class threadCamera(ThreadWithStop):
                         (2048, 1080),
                     )
 
-        except Exception as e:
-            print(f"\033[1;97m[ Camera ] :\033[0m \033[1;91mERROR\033[0m - {e}")
-
-        try:
+            # Capture images
             mainRequest = self.camera.capture_array("main")
             serialRequest = self.camera.capture_array("lores")  # Will capture an array that can be used by OpenCV library
 
-            if self.recording == True:
+            # Anti crash security
+            if mainRequest is None or serialRequest is None:
+                return
+
+            if self.recording is True: # <-- Corrección segura aplicada
                 self.video_writer.write(mainRequest) # type: ignore
 
             # Convert to BGR for OpenCV compatibility
@@ -147,6 +147,7 @@ class threadCamera(ThreadWithStop):
 
             self.mainCameraSender.send(mainEncodedImageData)
             self.serialCameraSender.send(serialEncodedImageData)
+            
         except Exception as e:
             print(f"\033[1;97m[ Camera ] :\033[0m \033[1;91mERROR\033[0m - {e}")
 

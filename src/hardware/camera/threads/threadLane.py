@@ -85,7 +85,7 @@ class threadLane(ThreadWithStop):
         self.perspective_matrix = cv2.getPerspectiveTransform(src, dst)
         self.controlSender = messageHandlerSender(self.queuesList, LaneData)
         
-        super(threadLane, self).__init__(pause=0.001)
+        super(threadLane, self).__init__(pause=0.033)   # 30Hz — Stanley only needs ~30Hz lane data
 
     def thread_work(self):
         """Main perception loop with explicit failure safety."""
