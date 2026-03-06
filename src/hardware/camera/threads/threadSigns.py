@@ -22,6 +22,9 @@ class threadSigns(ThreadWithStop):
         # Lazy-loaded on first frame to avoid power spike during busy startup phase
         self.model = None
         
+        self._consecutive = {}   # {"highway_exit": 3, ...}
+        self.CONFIRM_FRAMES = 3
+
         # --- DISTANCE CALIBRATION ---
         self.focal_length = 984.0
         self.real_width_dict = {
@@ -80,17 +83,23 @@ class threadSigns(ThreadWithStop):
                 detections = self.detect_signs(small_frame)
 
                 if detections:
-                    for det in detections:
-                        # 4. OUTPUT: Send the packet to the FSM
-                        self.signSender.send(det)
-                        self._dign_diag = getattr(self, '_dign_diag', 0) + 1
-                        if self._dign_diag % 50 == 1:
-                            self.logging.warning(f"[Signs] Detected: {det['type'].name} at {det['distance']:.1f}mm")
-                            #pass
+                    detected_types = {d['type'] for d in detections}
+                    for sign_type in list(self._consecutive.keys()):
+                        if sign_type not in detected_types:
+                            self._consecutive[sign_type] = 0  # reset si desaparece
 
-                        # Print in terminal the Enum (e.g., SignType.STOP) and the distance
-                        #print(f"[Signs] Detected: {det['type'].name} at {det['distance']:.1f}mm")
-                            
+                    confirmed = []
+                    for det in detections:
+                        t = det['type']
+                        self._consecutive[t] = self._consecutive.get(t, 0) + 1
+                        if self._consecutive[t] >= self.CONFIRM_FRAMES:
+                            confirmed.append(det)
+
+                    for det in confirmed:
+                        self.signSender.send(det)
+                        self.logging.warning(f"[Signs] CONFIRMED: {det['type'].name} a {det['distance']:.1f}mm")
+                    
+                    
             except Exception as e:
                 self.logging.error(f"[threadSigns] Vision processing error: {e}")
 
@@ -106,7 +115,7 @@ class threadSigns(ThreadWithStop):
         4. Return detections_list of dicts expected by the FSM.
         """
         # Require a minimum confidence of 80%
-        results = self.model(frame, conf=0.90, verbose=False)
+        results = self.model(frame, conf=0.75, verbose=False)
         detections_list = []
 
         if len(results[0].boxes) > 0:
