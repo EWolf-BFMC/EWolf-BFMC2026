@@ -136,6 +136,12 @@ class threadCamera(ThreadWithStop):
             # Store raw BGR frame in shared RAM for threadLane and threadSigns
             self.shared_container['frame'] = serialRequest
 
+            # Rate-limit dashboard stream to 5Hz (every 4th frame at 20Hz loop)
+            # Prevents gateway pipe saturation from large base64-encoded JPEG frames
+            self._dashboard_tick = getattr(self, '_dashboard_tick', 0) + 1
+            if self._dashboard_tick % 4 != 0:
+                return
+
             _, mainEncodedImg = cv2.imencode(".jpg", mainRequest) # type: ignore
             _, serialEncodedImg = cv2.imencode(".jpg", serialRequest) # type: ignore
 
