@@ -150,7 +150,7 @@ class threadControl(ThreadWithStop):
             e_y = data.get('e_y', 0.0)         
             theta_e = data.get('theta_e', 0.0) 
             v = data.get('speed', 0.0)  # Dynamic speed
-            v = 40
+            # v = 40  # DEBUG: hardcoded speed override
 
             # If the car is stopped, keep wheels straight to avoid servo wear
             if v < 0.01:

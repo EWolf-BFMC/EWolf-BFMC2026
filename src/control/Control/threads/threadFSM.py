@@ -47,17 +47,21 @@ _DECEL_RAMP_DURATION = 2.0   # DECELERATION RAMP CONSTANT
 # Sequence: (duration_s, speed_m/s, steer_deg, label)
 # All timings are initial estimates — calibrate on the physical car.
 # =============================================================================
-_PARK_FWD_SPEED = 0.10    # m/s  forward approach / exit speed
-_PARK_REV_SPEED = -0.10   # m/s  reverse speed
-
 _PARKING_PHASES = [
-    (1.5,  _PARK_FWD_SPEED,   0.0,   "approach-align"),
-    (1.0,  _PARK_FWD_SPEED,  20.0,   "clear-spot-entry"),
-    (2.0,  _PARK_REV_SPEED,  25.0,   "reverse-into-spot"),
-    (0.5, -0.08,            -15.0,   "straighten-in-spot"),
-    (3.0,  0.0,               0.0,   "wait-in-spot"),
-    (2.0,  _PARK_FWD_SPEED, -25.0,   "exit-forward"),
-    (0.8,  _PARK_FWD_SPEED,  10.0,   "return-to-lane"),
+    # --- Park IN ---
+    (8.0,  -0.10, -23.0, "in-reverse-left"),
+    (2.0,  -0.10,  23.0, "in-reverse-right"),
+    (2.0,   0.10, -23.0, "in-forward-left"),
+    (2.4,  -0.10,  23.0, "in-reverse-right-2"),
+    (1.0,   0.10,   0.0, "in-exit-straight"),
+    # --- Wait in spot ---
+    (5.0,   0.00,   0.0, "wait-in-spot"),
+    # --- Park OUT (reverse order, negated speed, same steer) ---
+    (1.0,  -0.10,   0.0, "out-reverse-straight"),
+    (2.4,   0.10,  23.0, "out-forward-right-2"),
+    (2.0,  -0.10, -23.0, "out-reverse-left"),
+    (2.0,   0.10,  23.0, "out-forward-right"),
+    (8.0,   0.10, -23.0, "out-forward-left"),
 ]
 
 
@@ -559,7 +563,7 @@ class threadFSM(ThreadWithStop):
         else:
             # Slow creep while waiting for the reliability handshake
             self._send_command(BehaviorState.PARKING_MANEUVER,
-                               _PARK_FWD_SPEED * 0.5,   # 0.05 m/s ≈ 50 mm/s
+                               0.05,   # slow creep while awaiting lane reliability
                                override_steer=0.0)
 
     # =========================================================================
