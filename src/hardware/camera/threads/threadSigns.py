@@ -19,8 +19,8 @@ class threadSigns(ThreadWithStop):
         self.shared_container = shared_container
         
         # --- VISION MODEL CONFIGURATION ---
-        # Load the optimized model for the Raspberry Pi 5
-        self.model = YOLO('models/best_ncnn_model', task='detect')
+        # Lazy-loaded on first frame to avoid power spike during busy startup phase
+        self.model = None
         
         # --- DISTANCE CALIBRATION ---
         self.focal_length = 984.0
@@ -63,9 +63,15 @@ class threadSigns(ThreadWithStop):
         
         if frame is not None:
             try:
+                # Lazy-load model on first frame so startup power spike is avoided
+                if self.model is None:
+                    self.logging.warning("[Signs] Loading YOLO model...")
+                    self.model = YOLO('models/best_ncnn_model', task='detect')
+                    self.logging.warning("[Signs] Model loaded successfully.")
+
                 # 2. PROCESSING:
                 # INCREASED to 640 because we retrained the model to see at +80cm
-                input_res = 640 
+                input_res = 640
                 small_frame = cv2.resize(frame, (input_res, input_res))
                 
                 # Pass the image to our detection function
