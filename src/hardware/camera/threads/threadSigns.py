@@ -50,7 +50,7 @@ class threadSigns(ThreadWithStop):
         self.signSender = messageHandlerSender(self.queuesList, SignDetection)
         self.subscribe()
 
-        super(threadSigns, self).__init__(pause=0.1)  # 10Hz — YOLO inference is ~100ms on Pi5
+        super(threadSigns, self).__init__(pause=0.2)  # 5Hz — reduce sustained CPU on Pi5
 
     def subscribe(self):
         """No subscribers needed; data is pulled from shared memory."""
@@ -67,7 +67,9 @@ class threadSigns(ThreadWithStop):
                 if self.model is None:
                     self.logging.warning("[Signs] Loading YOLO model...")
                     self.model = YOLO('models/best_ncnn_model', task='detect')
-                    self.logging.warning("[Signs] Model loaded successfully.")
+                    self.logging.warning("[Signs] Model loaded. Waiting for system to stabilize...")
+                    import time; time.sleep(2.0)
+                    self.logging.warning("[Signs] Ready.")
 
                 # 2. PROCESSING:
                 # INCREASED to 640 because we retrained the model to see at +80cm
@@ -104,7 +106,7 @@ class threadSigns(ThreadWithStop):
         4. Return detections_list of dicts expected by the FSM.
         """
         # Require a minimum confidence of 80%
-        results = self.model(frame, conf=0.80, verbose=False)
+        results = self.model(frame, conf=0.90, verbose=False)
         detections_list = []
 
         if len(results[0].boxes) > 0:
