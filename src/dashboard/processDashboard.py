@@ -352,21 +352,10 @@ class processDashboard(WorkerProcess):
         if not self.running:
             return
 
-        if not self.heartbeat_received and self.sessionActive:
-            self.heartbeat_retries += 1
-            if self.heartbeat_retries < self.heartbeat_max_retries:
-                self.socketio.emit('heartbeat', {'data': 'Heartbeat'})
-            else:
-                print(f"\033[1;97m[ Dashboard ] :\033[0m \033[1;93mWARNING\033[0m - Connection lost with peer \033[94m{self.activeUser}\033[0m")
-                self.socketio.emit('heartbeat_disconnect', {'data': 'Heartbeat timeout'})
-                self.sessionActive = False
-                self.activeUser = None
-                self.heartbeat_retries = 0
-
-            eventlet.spawn_after(self.heartbeat_time_between_retries, self.send_heartbeat)
-        else:
-            self.heartbeat_received = False
-            eventlet.spawn_after(self.heartbeat_time_between_heartbeats, self.send_heartbeat)
+        # Always emit heartbeat — never force-disconnect (camera/session must stay alive during race)
+        self.socketio.emit('heartbeat', {'data': 'Heartbeat'})
+        self.heartbeat_received = False
+        eventlet.spawn_after(self.heartbeat_time_between_heartbeats, self.send_heartbeat)
 
 
     def _make_json_safe(self, obj):
