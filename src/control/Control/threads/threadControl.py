@@ -48,9 +48,9 @@ class threadControl(ThreadWithStop):
         self.debugging = debugging
         
         # --- Stanley Controller Parameters (normal lane following) ---
-        self.k = 5.5
-        self.ks = 0.5
-        self.kd = 0.4
+        self.k = 4.0
+        self.ks = 0.2
+        self.kd = 0.2
 
         # --- Stanley Controller Parameters (highway — higher speed, gentler gains) ---
         self.k_highway = 3.05   # Lower cross-track gain: less aggressive at high speed

@@ -38,15 +38,15 @@ _PARKING_PHASES = [
     (2.0,  -0.10,  23.0, "in-reverse-right"),
     (2.0,   0.10, -23.0, "in-forward-left"),
     (2.4,  -0.10,  23.0, "in-reverse-right-2"),
-    (1.0,   0.10,   0.0, "in-exit-straight"),
+    (1.2,   0.10, -14.0, "in-exit-straight"),
     # --- Wait in spot ---
-    (5.0,   0.00,   0.0, "wait-in-spot"),
+    (3.0,   0.00,   0.0, "wait-in-spot"),
     # --- Park OUT (reverse order, negated speed, same steer) ---
-    (1.0,  -0.10,   0.0, "out-reverse-straight"),
+    (1.3,  -0.10,  14.0, "out-reverse-straight"),
     (2.4,   0.10,  23.0, "out-forward-right-2"),
     (2.0,  -0.10, -23.0, "out-reverse-left"),
-    (2.0,   0.10,  23.0, "out-forward-right"),
-    (8.0,   0.10, -23.0, "out-forward-left"),
+    (0.75,  0.10,  23.0, "out-forward-right"),
+    (3.5,   0.10, -23.0, "out-forward-left"),
 ]
 
 
@@ -62,7 +62,8 @@ class threadFSM(ThreadWithStop):
         self.debugging = debugging
 
         # --- STATE REGISTRY ---
-        self.current_state = BehaviorState.IDLE
+        #PARKING_MANEUVER
+        self.current_state = BehaviorState.IDLE  # TEST — revert to IDLE after
         self.previous_state = BehaviorState.IDLE
 
         # --- INPUT MEMORY ---
