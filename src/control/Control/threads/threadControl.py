@@ -47,15 +47,16 @@ class threadControl(ThreadWithStop):
         self.logging = logging
         self.debugging = debugging
         
-        # --- Stanley Controller Parameters ---
-        self.k = 5.5         # Conservative: stable at all FSM speeds including DECELERATING (v=0.1m/s)
-        # self.k = 2.5            # [PREV] Too aggressive when v drops below 0.15m/s — causes overshoot
-        self.ks = 0.5            # LaneBefore.py baseline
-        # self.ks = 0.1           # Metric e_y: small softening (restore when BEV verified)
+        # --- Stanley Controller Parameters (normal lane following) ---
+        self.k = 5.5
+        self.ks = 0.5
+        self.kd = 0.4
 
-        # --- Damping Parameters  ---
-        self.kd = 0.4          # Disabled — set to 0 to turn off, NOT removed (restore to tune)
-        # self.kd = 0.1           # Light damping: smooths hard direction reversals
+        # --- Stanley Controller Parameters (highway — higher speed, gentler gains) ---
+        self.k_highway = 3.1   # Lower cross-track gain: less aggressive at high speed
+        self.ks_highway = 0.5
+        self.kd_highway = 0.68  # More damping: prevents oscillation at highway speed
+
         self.prev_steering_angle_rad = 0.0 # Memory for the derivative term
         
         # --- Calibration & Constraints ---
@@ -147,10 +148,16 @@ class threadControl(ThreadWithStop):
         """
         try:
             # Extract unified data (Determined by threadLogic)
-            e_y = data.get('e_y', 0.0)         
-            theta_e = data.get('theta_e', 0.0) 
-            v = data.get('speed', 0.0)  # Dynamic speed
-            # v = 0  # DEBUG: hardcoded speed override
+            e_y = data.get('e_y', 0.0)
+            theta_e = data.get('theta_e', 0.0)
+            v = data.get('speed', 0.0)
+            behavior = data.get('behavior', BehaviorState.LANE_FOLLOWING)
+
+            # Select gains based on driving state
+            if behavior == BehaviorState.HIGHWAY_DRIVING:
+                k, ks, kd = self.k_highway, self.ks_highway, self.kd_highway
+            else:
+                k, ks, kd = self.k, self.ks, self.kd
 
             # If the car is stopped, keep wheels straight to avoid servo wear
             if v < 0.01:
@@ -159,15 +166,12 @@ class threadControl(ThreadWithStop):
                 return
 
             # Stanley Law
-            # e_y sign convention: negative = car is RIGHT of lane → needs RIGHT steer.
-            # Physical servo convention: negative command = RIGHT, positive = LEFT.
-            # e_y < 0 → atan2 returns negative → RIGHT steer → correct convergence.
-            steering_adj = math.atan2(self.k * e_y, v + self.ks)
+            steering_adj = math.atan2(k * e_y, v + ks)
             desired_rad = theta_e + steering_adj
-            
+
             # Approximate Derivative Damping (subtracts rate-of-change to resist fast swings)
             diff = desired_rad - self.prev_steering_angle_rad
-            final_rad = desired_rad - (self.kd * diff)
+            final_rad = desired_rad - (kd * diff)
             self.prev_steering_angle_rad = final_rad    #Update memory for next frame
             
             # Internal Math Clamp
