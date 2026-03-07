@@ -8,36 +8,21 @@ from src.utils.messages.allMessages import (
 import time
 
 # =============================================================================
-# INTERSECTION OPEN-LOOP TRAJECTORY CONSTANTS
+# INTERSECTION OPEN-LOOP SEQUENCE
 #
-# Vehicle geometry (1/10 scale):
-#   Wheelbase L ≈ 260 mm, car half-width ≈ 80 mm
-#   Inner turning radius R_inner = 480 mm  (competition spec)
-#   Lane width = 350 mm
-#
-# LEFT TURN  (-25° max steer):
-#   R_center = 480 + 80 = 560 mm
-#   Arc (90) = 560 × π/2 ≈ 879 mm  →  duration = 879 / 150 ≈ 5.9 s → 6.0 s
-#
-# RIGHT TURN (+25° max steer):
-#   Symmetric estimate with slightly shorter duration → 5.5 s
-#   NOTA: physical fit within 350 mm lane must be verified on the track.
-#
-# STRAIGHT:
-#   1.2 s at 150 mm/s clears the conflict zone (≈ 180 mm clearance).
+# 6 pre-calibrated maneuvers for the planned race route.
+# Each entry: (duration_s, speed_m/s, steer_deg, label)
+# Executed in order on each successive INTERSECTION state entry.
+# Wraps back to 0 after all 6 are consumed.
 # =============================================================================
-_MANEUVER_SPEED     = 0.15   # m/s  (150 mm/s)
-_ENTRY_PHASE_DUR    = 0.5    # s    straight approach before the turn
-_EXIT_PHASE_DUR     = 0.5    # s    straight exit after the turn
-
-_LEFT_STEER_DEG     = -25.0
-_LEFT_TURN_DUR      =  6.0
-
-_RIGHT_STEER_DEG    = +25.0
-_RIGHT_TURN_DUR     =  5.5
-
-_STRAIGHT_STEER_DEG =  0.0
-_STRAIGHT_TURN_DUR  =  1.2
+_INTERSECTION_SEQUENCE = [
+    (4.0, 0.20,  12.0, "intersection-1"),
+    (6.0, 0.20, -15.0, "intersection-2"),
+    (2.0, 0.10, -15.0, "intersection-3"),
+    (3.0, 0.20,  10.0, "intersection-4"),
+    (7.0, 0.20,  -4.0, "intersection-5"),
+    (4.0, 0.20,  12.0, "intersection-6"),
+]
 
 _DECEL_RAMP_DURATION = 2.0   # DECELERATION RAMP CONSTANT
 
@@ -98,6 +83,8 @@ class threadFSM(ThreadWithStop):
 
         self._intersection_phase = 0
         self._intersection_phase_timer = None
+        self._intersection_index = 0        # which of the 6 maneuvers to run next
+        self._current_intersection = _INTERSECTION_SEQUENCE[0]
 
         self._parking_phase = 0
         self._parking_phase_timer = None
@@ -439,78 +426,44 @@ class threadFSM(ThreadWithStop):
 
     def _action_intersection(self, fresh_entry):
         """
-        Pre-defined open-loop trajectory for intersection conflict zones.
+        Executes the next maneuver in _INTERSECTION_SEQUENCE.
+
+        On each fresh entry the index advances so successive intersections
+        run different pre-calibrated open-loop commands.
 
         Phases
         ------
-        0  Entry straight  — 0.5 s @ 150 mm/s, steer 0°
-        1  Turn execution  — direction-dependent (see module constants)
-        2  Exit straight   — 0.5 s @ 150 mm/s, steer 0°
-        3  Slow creep      — 75 mm/s, steer 0° while awaiting reliability
-
-        The FSM sets maneuver_complete=True at the end of phase 2.
-        update_state() will not exit INTERSECTION until maneuver_complete
-        AND lane reliability ≥ 0.8 (reliability handshake).
-
-        ``intersection_direction`` must be set externally ("LEFT"|"RIGHT"|"STRAIGHT").
+        0  Maneuver execution — timed speed+steer from _INTERSECTION_SEQUENCE
+        1  Slow creep         — 0.05 m/s, steer 0° while awaiting lane reliability
         """
         if fresh_entry:
             self._intersection_phase = 0
             self._intersection_phase_timer = None
             self.maneuver_complete = False
-            if self.debugging:
-                self.logging.info(
-                    f"[FSM] INTERSECTION entered — direction: {self.intersection_direction}")
+            self._current_intersection = _INTERSECTION_SEQUENCE[self._intersection_index]
+            dur, spd, steer, label = self._current_intersection
+            self.logging.warning(
+                f"[FSM] INTERSECTION #{self._intersection_index + 1} ({label}): "
+                f"{dur}s @ {spd*100:.0f}cm/s, steer={steer}°")
 
         now = time.perf_counter()
-        phase = self._intersection_phase
+        dur, spd, steer, label = self._current_intersection
 
-        # ── Phase 0: Approach straight ────────────────────────────────────────
-        if phase == 0:
+        # ── Phase 0: Execute pre-calibrated maneuver ──────────────────────────
+        if self._intersection_phase == 0:
             if self._intersection_phase_timer is None:
                 self._intersection_phase_timer = now
-            if now - self._intersection_phase_timer >= _ENTRY_PHASE_DUR:
+            if now - self._intersection_phase_timer >= dur:
                 self._intersection_phase = 1
-                self._intersection_phase_timer = now
-            self._send_command(BehaviorState.INTERSECTION,
-                               _MANEUVER_SPEED, override_steer=0.0)
-
-        # ── Phase 1: Turn execution ───────────────────────────────────────────
-        elif phase == 1:
-            direction = self.intersection_direction
-            if direction == "LEFT":
-                steer    = _LEFT_STEER_DEG
-                duration = _LEFT_TURN_DUR
-            elif direction == "RIGHT":
-                steer    = _RIGHT_STEER_DEG
-                duration = _RIGHT_TURN_DUR
-            else:                               # "STRAIGHT" — safe default
-                steer    = _STRAIGHT_STEER_DEG
-                duration = _STRAIGHT_TURN_DUR
-
-            if now - self._intersection_phase_timer >= duration:
-                self._intersection_phase = 2
-                self._intersection_phase_timer = now
-            self._send_command(BehaviorState.INTERSECTION,
-                               _MANEUVER_SPEED, override_steer=steer)
-
-        # ── Phase 2: Exit straight ────────────────────────────────────────────
-        elif phase == 2:
-            if now - self._intersection_phase_timer >= _EXIT_PHASE_DUR:
-                self._intersection_phase = 3
                 self.maneuver_complete = True
-                if self.debugging:
-                    self.logging.info(
-                        "[FSM] INTERSECTION maneuver complete. "
-                        "Awaiting lane reliability ≥ 0.8 …")
-            self._send_command(BehaviorState.INTERSECTION,
-                               _MANEUVER_SPEED, override_steer=0.0)
+                self._intersection_index = (self._intersection_index + 1) % len(_INTERSECTION_SEQUENCE)
+                self.logging.warning(
+                    f"[FSM] INTERSECTION maneuver done. Next index: {self._intersection_index + 1}")
+            self._send_command(BehaviorState.INTERSECTION, spd, override_steer=steer)
 
-        # ── Phase 3: Slow creep — await lane reliability handshake ───────────
+        # ── Phase 1: Slow creep — await lane reliability handshake ───────────
         else:
-            self._send_command(BehaviorState.INTERSECTION,
-                               _MANEUVER_SPEED * 0.5,   # 0.075 m/s ≈ 75 mm/s
-                               override_steer=0.0)
+            self._send_command(BehaviorState.INTERSECTION, 0.05, override_steer=0.0)
 
     def _action_parking(self, fresh_entry):
         """
