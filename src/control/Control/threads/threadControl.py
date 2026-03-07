@@ -53,9 +53,9 @@ class threadControl(ThreadWithStop):
         self.kd = 0.4
 
         # --- Stanley Controller Parameters (highway — higher speed, gentler gains) ---
-        self.k_highway = 3.1   # Lower cross-track gain: less aggressive at high speed
+        self.k_highway = 3.05   # Lower cross-track gain: less aggressive at high speed
         self.ks_highway = 0.5
-        self.kd_highway = 0.68  # More damping: prevents oscillation at highway speed
+        self.kd_highway = 0.67  # More damping: prevents oscillation at highway speed
 
         self.prev_steering_angle_rad = 0.0 # Memory for the derivative term
         

@@ -56,7 +56,7 @@ class threadCamera(ThreadWithStop):
 
     # ================================ INIT ===============================================
     def __init__(self, queuesList, logger, debugger, shared_container): # Added shared_container
-        super(threadCamera, self).__init__(pause=0.05)   # 20Hz — prevents queue flooding dashboard
+        super(threadCamera, self).__init__(pause=0.05)   # 20Hz — prevents queue flooding dashboard, before at 1000Hz
         self.queuesList = queuesList
         self.logger = logger
         self.debugger = debugger
@@ -138,9 +138,9 @@ class threadCamera(ThreadWithStop):
 
             # Rate-limit dashboard stream to 5Hz (every 4th frame at 20Hz loop)
             # Prevents gateway pipe saturation from large base64-encoded JPEG frames
-            self._dashboard_tick = getattr(self, '_dashboard_tick', 0) + 1
-            if self._dashboard_tick % 4 != 0:
-                return
+            #self._dashboard_tick = getattr(self, '_dashboard_tick', 0) + 1
+            #if self._dashboard_tick % 4 != 0:
+                #return
 
             _, mainEncodedImg = cv2.imencode(".jpg", mainRequest, [cv2.IMWRITE_JPEG_QUALITY, 60]) # type: ignore
             _, serialEncodedImg = cv2.imencode(".jpg", serialRequest, [cv2.IMWRITE_JPEG_QUALITY, 60]) # type: ignore
