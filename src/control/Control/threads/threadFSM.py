@@ -92,6 +92,10 @@ class threadFSM(ThreadWithStop):
         self.stop_timer_start = None
         self.stop_reason = None  # "SIGN" or "PEDESTRIAN"
 
+        # --- TEMPORAL MEMORY ---
+        self.last_sign_time = 0.0
+        self.sign_hold_time = 0.3
+
         # --- MANEUVER STATE TRACKING ---
         # Set intersection_direction externally by a route planner before the
         # car reaches the intersection: "LEFT" | "RIGHT" | "STRAIGHT"
@@ -156,42 +160,51 @@ class threadFSM(ThreadWithStop):
             self.queuesList, SignDetection, "lastOnly", True)
 
     def update_inputs(self):
-        """
-        Polls all subscribers and updates internal memory.
-        This represents the 'Sensing' phase of the FSM.
-        """
-        lane_data = self.laneSub.receive()
-        if lane_data:
-            self.lane_info['reliability'] = lane_data.get('reliability', 0.0)
-            if self.lane_info['reliability'] >= 0.3:
-                self.lane_info['e_y']     = lane_data.get('e_y', 0.0)
-                self.lane_info['theta_e'] = lane_data.get('theta_e', 0.0)
-            else:
-                # Lane lost or unreliable — drive straight rather than
-                # chasing a stale cross-track error.
-                self.lane_info['e_y']     = 0.0
-                self.lane_info['theta_e'] = 0.0
+    """
+    Polls all subscribers and updates internal memory.
+    This represents the 'Sensing' phase of the FSM.
+    """
+    lane_data = self.laneSub.receive()
+    if lane_data:
+        self.lane_info['reliability'] = lane_data.get('reliability', 0.0)
 
-        lidar_data = self.lidarSub.receive()
-        if lidar_data:
-            self.obstacle_info['distance'] = lidar_data.get('distance', 9999.0)
-            self.obstacle_info['reliability'] = lidar_data.get('reliability', 0.0)
-            self.lidar_data_received = True
-
-        sign_data = self.signSub.receive()
-        if sign_data:
-            raw_type = sign_data.get('type', None)
-            if isinstance(raw_type, SignType):
-                self.active_sign['type'] = raw_type
-            elif raw_type is not None:
-                try:
-                    self.active_sign['type'] = SignType(raw_type)
-                except ValueError:
-                    self.active_sign['type'] = None
-            else:
-                self.active_sign['type'] = None
-            self.active_sign['distance'] = sign_data.get('distance', 2000.0)
+        if self.lane_info['reliability'] >= 0.3:
+            self.lane_info['e_y'] = lane_data.get('e_y', 0.0)
+            self.lane_info['theta_e'] = lane_data.get('theta_e', 0.0)
         else:
+            # Lane lost or unreliable
+            self.lane_info['e_y'] = 0.0
+            self.lane_info['theta_e'] = 0.0
+
+    lidar_data = self.lidarSub.receive()
+    if lidar_data:
+        self.obstacle_info['distance'] = lidar_data.get('distance', 9999.0)
+        self.obstacle_info['reliability'] = lidar_data.get('reliability', 0.0)
+        self.lidar_data_received = True
+
+    sign_data = self.signSub.receive()
+    if sign_data:
+        raw_type = sign_data.get('type', None)
+
+        if isinstance(raw_type, SignType):
+            self.active_sign['type'] = raw_type
+
+        elif raw_type is not None:
+            try:
+                self.active_sign['type'] = SignType(raw_type)
+            except ValueError:
+                self.active_sign['type'] = None
+        else:
+            self.active_sign['type'] = None
+
+        self.active_sign['distance'] = sign_data.get('distance', 2000.0)
+
+        # Save last valid signal
+        self.last_sign_time = time.perf_counter()
+
+    else:
+        # keep signal for a little
+        if time.perf_counter() - self.last_sign_time > self.sign_hold_time:
             self.active_sign = {"type": None, "distance": 2000.0}
 
     # =========================================================================
@@ -238,7 +251,7 @@ class threadFSM(ThreadWithStop):
             if (sign in (SignType.STOP, SignType.PARKING, SignType.CROSSWALK)
                     and s_dist < 350) or (zone == ObstacleZone.WARNING):
                 self.current_state = BehaviorState.DECELERATING
-            elif sign == SignType.PRIORITY and s_dist < 350:
+            elif sign == SignType.PRIORITY:
                 self.current_state = BehaviorState.INTERSECTION
             elif sign == SignType.HIGHWAY_ENTRY:
                 self.current_state = BehaviorState.HIGHWAY_DRIVING
@@ -554,6 +567,7 @@ class threadFSM(ThreadWithStop):
         self.update_state()
         self.execute_behavior()
         self._publish_status()
+
 
 
 
