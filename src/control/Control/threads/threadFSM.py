@@ -139,9 +139,9 @@ class threadFSM(ThreadWithStop):
         if reliability < 0.2:
             return ObstacleZone.DANGER  # Sensor lost mid-run → emergency stop
 
-        if distance < 300.0:
+        if distance < 150.0:
             return ObstacleZone.DANGER
-        elif distance < 900.0:
+        elif distance < 400.0:
             return ObstacleZone.WARNING
         else:
             return ObstacleZone.CLEAR
@@ -236,9 +236,9 @@ class threadFSM(ThreadWithStop):
         # LANE_FOLLOWING transitions
         elif self.current_state == BehaviorState.LANE_FOLLOWING:
             if (sign in (SignType.STOP, SignType.PARKING, SignType.CROSSWALK)
-                    and s_dist < 600) or (zone == ObstacleZone.WARNING):
+                    and s_dist < 350) or (zone == ObstacleZone.WARNING):
                 self.current_state = BehaviorState.DECELERATING
-            elif sign == SignType.PRIORITY and s_dist < 600:
+            elif sign == SignType.PRIORITY and s_dist < 350:
                 self.current_state = BehaviorState.INTERSECTION
             elif sign == SignType.HIGHWAY_ENTRY:
                 self.current_state = BehaviorState.HIGHWAY_DRIVING
@@ -250,15 +250,15 @@ class threadFSM(ThreadWithStop):
 
         # DECELERATING transitions
         elif self.current_state == BehaviorState.DECELERATING:
-            if sign == SignType.STOP and s_dist < 150:
+            if sign == SignType.STOP and s_dist < 100:
                 self.current_state = BehaviorState.STOP_ACTION
                 self.stop_reason = "SIGN"
             elif sign == SignType.CROSSWALK and zone == ObstacleZone.DANGER:
                 self.current_state = BehaviorState.STOP_ACTION
                 self.stop_reason = "PEDESTRIAN"
             elif sign == SignType.PARKING and s_dist < 200:
-                self.current_state = BehaviorState.PARKING_MANEUVER
-            elif zone == ObstacleZone.CLEAR and s_dist > 900:
+                self.current_state = BehaviorState.PARKING_MANEUVER    #PENDING OF DEFINIGN CORRECTLY
+            elif zone == ObstacleZone.CLEAR and s_dist > 400:
                 self.current_state = BehaviorState.LANE_FOLLOWING
 
         # STOP_ACTION: 3-second regulatory halt
@@ -554,5 +554,6 @@ class threadFSM(ThreadWithStop):
         self.update_state()
         self.execute_behavior()
         self._publish_status()
+
 
 
