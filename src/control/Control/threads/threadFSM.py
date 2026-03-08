@@ -40,7 +40,7 @@ _PARKING_PHASES = [
     (2.4,  -0.10,  23.0, "in-reverse-right-2"),
     (1.2,   0.10, -14.0, "in-exit-straight"),
     # --- Wait in spot ---
-    (3.0,   0.00,   0.0, "wait-in-spot"),
+    (4.0,   0.00,   0.0, "wait-in-spot"),
     # --- Park OUT (reverse order, negated speed, same steer) ---
     (1.3,  -0.10,  14.0, "out-reverse-straight"),
     (2.4,   0.10,  23.0, "out-forward-right-2"),
@@ -49,10 +49,27 @@ _PARKING_PHASES = [
     (3.5,   0.10, -23.0, "out-forward-left"),
 ]
 
+_PARKING_PHASES_RIGHT = [
+    # --- Park IN (mirrored steer) ---
+    (8.0,  -0.10,  23.0, "in-reverse-right"),
+    (2.0,  -0.10, -23.0, "in-reverse-left"),
+    (2.0,   0.10,  23.0, "in-forward-right"),
+    (2.4,  -0.10, -23.0, "in-reverse-left-2"),
+    (1.2,   0.10,  14.0, "in-exit-straight"),
+    # --- Wait in spot ---
+    (4.0,   0.00,   0.0, "wait-in-spot"),
+    # --- Park OUT ---
+    (1.3,  -0.10, -14.0, "out-reverse-straight"),
+    (2.4,   0.10, -23.0, "out-forward-left-2"),
+    (2.0,  -0.10,  23.0, "out-reverse-right"),
+    (0.75,  0.10, -23.0, "out-forward-left"),
+    (3.5,   0.10,  23.0, "out-forward-right"),
+]
+
 
 class threadFSM(ThreadWithStop):
     """
-    The 'Brain' of the E-Wolf. It aggregates sensor inputs to manage
+    The 'Brain'. It aggregates sensor inputs to manage
     Behavioral States and sends commands to threadControl.
     """
 
@@ -472,18 +489,6 @@ class threadFSM(ThreadWithStop):
     def _action_parking(self, fresh_entry):
         """
         Timed open-loop parking sequence (draft — calibrate on the car).
-
-        Phase sequence
-        --------------
-        0  Approach and align      1.5 s   fwd  0.10 m/s   steer  0°
-        1  Clear spot entry        1.0 s   fwd  0.10 m/s   steer +20°
-        2  Reverse into spot       2.0 s   rev -0.10 m/s   steer +25°
-        3  Straighten in spot      0.5 s   rev -0.08 m/s   steer -15°
-        4  Wait in spot            3.0 s   0    m/s         steer  0°
-        5  Exit forward            2.0 s   fwd  0.10 m/s   steer -25°
-        6  Return to lane          0.8 s   fwd  0.10 m/s   steer +10°
-        7  Slow creep              50 mm/s, steer 0° while awaiting reliability
-
         After phase 6, maneuver_complete=True. update_state() will not exit
         PARKING_MANEUVER until maneuver_complete AND lane reliability ≥ 0.8.
         """
@@ -549,4 +554,5 @@ class threadFSM(ThreadWithStop):
         self.update_state()
         self.execute_behavior()
         self._publish_status()
+
 
