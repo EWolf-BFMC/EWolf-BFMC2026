@@ -91,6 +91,7 @@ class threadFSM(ThreadWithStop):
         self._parking_phase_timer = None
 
         self._decel_start_time = None
+        self._decel_entry_speed = SpeedLimit.CITY_MIN.value  # updated by the state before DECEL
 
         # Tracks previous state in execute_behavior() to detect fresh entries
         self._prev_executed_state = None
@@ -380,6 +381,7 @@ class threadFSM(ThreadWithStop):
 
     def _action_lane_following(self):
         """City navigation at CITY_MIN (20 cm/s); lane errors fed to Stanley."""
+        self._decel_entry_speed = SpeedLimit.CITY_MIN.value
         self._send_command(
             BehaviorState.LANE_FOLLOWING,
             SpeedLimit.CITY_MIN.value,          # 0.20 m/s
@@ -393,6 +395,7 @@ class threadFSM(ThreadWithStop):
         Right-hand lane discipline is enforced upstream by threadLane's
         ROI; the FSM only raises the target speed.
         """
+        self._decel_entry_speed = SpeedLimit.HIGHWAY_MIN.value
         self._send_command(
             BehaviorState.HIGHWAY_DRIVING,
             SpeedLimit.HIGHWAY_MIN.value,       # 0.40 m/s
@@ -410,8 +413,8 @@ class threadFSM(ThreadWithStop):
 
         elapsed = time.perf_counter() - self._decel_start_time
         t = min(elapsed / _DECEL_RAMP_DURATION, 1.0)
-        start  = SpeedLimit.CITY_MIN.value          # 0.20 m/s
-        target = SpeedLimit.CITY_MIN.value * 0.5    # 0.10 m/s
+        start  = self._decel_entry_speed        # 0.20 from city, 0.40 from highway
+        target = self._decel_entry_speed * 0.5  # ramp to half
         speed  = start + t * (target - start)
 
         self._send_command(
@@ -546,3 +549,4 @@ class threadFSM(ThreadWithStop):
         self.update_state()
         self.execute_behavior()
         self._publish_status()
+
